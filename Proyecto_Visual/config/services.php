@@ -4,13 +4,12 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Third Party Services
+    | Servicios de Terceros
     |--------------------------------------------------------------------------
     |
-    | This file is for storing the credentials for third party services such
-    | as Resend, Postmark, AWS, and more. This file provides the de facto
-    | location for this type of information, allowing packages to have
-    | a conventional file to locate the various service credentials.
+    | Este archivo se utiliza para almacenar credenciales de servicios de terceros
+    | como Resend, Postmark, AWS y otros. Proporciona una ubicación centralizada
+    | y convencional para este tipo de información.
     |
     */
 
