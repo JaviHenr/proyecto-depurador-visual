@@ -15,13 +15,14 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property string $name
  * @property string $email
+ * @property string $role
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property string|null $remember_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['name', 'email', 'password', 'role'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -29,7 +30,7 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
-     * Get the attributes that should be cast.
+     * Obtiene los atributos que deben ser casteados.
      *
      * @return array<string, string>
      */
@@ -39,5 +40,21 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Verifica si el usuario tiene rol de profesor.
+     */
+    public function isProfesor(): bool
+    {
+        return $this->role === 'profesor';
+    }
+
+    /**
+     * Verifica si el usuario tiene rol de estudiante.
+     */
+    public function isEstudiante(): bool
+    {
+        return $this->role === 'estudiante';
     }
 }

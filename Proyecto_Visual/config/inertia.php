@@ -4,14 +4,14 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Server Side Rendering
+    | Renderizado del Lado del Servidor (Server Side Rendering - SSR)
     |--------------------------------------------------------------------------
     |
-    | These options configures if and how Inertia uses Server Side Rendering
-    | to pre-render each initial request made to your application's pages
-    | so that server rendered HTML is delivered for the user's browser.
+    | Estas opciones configuran si Inertia utiliza y cómo utiliza SSR para
+    | pre-renderizar cada solicitud inicial a las páginas de la aplicación,
+    | entregando HTML generado en el servidor al navegador del usuario.
     |
-    | See: https://inertiajs.com/server-side-rendering
+    | Ver: https://inertiajs.com/server-side-rendering
     |
     */
 
@@ -24,12 +24,12 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Pages
+    | Páginas (Pages)
     |--------------------------------------------------------------------------
     |
-    | These options configure how Inertia discovers page components on the
-    | filesystem. The paths and extensions are used to locate components
-    | when rendering responses and during testing assertions.
+    | Estas opciones configuran cómo Inertia descubre los componentes de página
+    | en el sistema de archivos. Las rutas y extensiones se usan para localizar
+    | componentes al renderizar respuestas y durante las aserciones de pruebas.
     |
     */
 
@@ -52,12 +52,12 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Testing
+    | Pruebas (Testing)
     |--------------------------------------------------------------------------
     |
-    | The values described here are used to locate Inertia components on the
-    | filesystem. For instance, when using `assertInertia`, the assertion
-    | attempts to locate the component as a file relative to the paths.
+    | Los valores descritos aquí se utilizan para localizar componentes de
+    | Inertia en el sistema de archivos. Por ejemplo, al usar `assertInertia`,
+    | la aserción intenta ubicar el archivo relativo a las rutas especificadas.
     |
     */
 
