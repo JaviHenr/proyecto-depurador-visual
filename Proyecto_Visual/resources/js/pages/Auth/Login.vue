@@ -47,7 +47,7 @@ const quickLogin = (role: 'profesor' | 'estudiante') => {
 
             <!-- Caja de Login Rectangular -->
             <div class="bg-white border border-[#E7E5E4] rounded-sm p-6 sm:p-7 shadow-xs">
-                <div class="mb-5 border-b border-[#F5F5F4] pb-3">
+                <div class="mb-5 pb-3 text-center">
                     <h2 class="text-sm font-semibold text-[#1C1917]">Iniciar Sesión</h2>
                 </div>
 
@@ -114,55 +114,12 @@ const quickLogin = (role: 'profesor' | 'estudiante') => {
                     <button
                         type="submit"
                         :disabled="form.processing"
-                        class="w-full bg-[#292524] hover:bg-[#1C1917] text-white font-medium py-2 px-4 rounded-xs text-xs transition duration-100 flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                        class="w-full bg-[#00AAFF] hover:bg-[#00AAFF] text-white font-medium py-2 px-4 rounded-xs text-xs transition duration-100 flex items-center justify-center gap-2"
                     >
                         <span>{{ form.processing ? 'Ingresando...' : 'Iniciar Sesión' }}</span>
                     </button>
                 </form>
-
-                <!-- Separador Simple -->
-                <div class="relative my-5">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-[#E7E5E4]"></div>
-                    </div>
-                </div>
-
-                <!-- Botones de Acceso Rápido Pasteles -->
-                <div class="grid grid-cols-2 gap-2.5">
-                    <button
-                        type="button"
-                        @click="quickLogin('profesor')"
-                        :disabled="form.processing"
-                        class="p-2.5 bg-[#F1F5F9] hover:bg-[#E2E8F0] border border-[#CBD5E1] rounded-xs text-left transition-colors cursor-pointer disabled:opacity-50"
-                    >
-                        <div class="text-xs font-semibold text-[#1E293B]">
-                            Profesor
-                        </div>
-                        <div class="text-[10px] text-[#64748B] truncate mt-0.5">
-                            profesor@depurador.test
-                        </div>
-                    </button>
-
-                    <button
-                        type="button"
-                        @click="quickLogin('estudiante')"
-                        :disabled="form.processing"
-                        class="p-2.5 bg-[#F0FDF4] hover:bg-[#DCFCE7] border border-[#BBF7D0] rounded-xs text-left transition-colors cursor-pointer disabled:opacity-50"
-                    >
-                        <div class="text-xs font-semibold text-[#14532D]">
-                            Estudiante
-                        </div>
-                        <div class="text-[10px] text-[#4ADE80]/80 text-[#15803D] truncate mt-0.5">
-                            estudiante@depurador.test
-                        </div>
-                    </button>
-                </div>
             </div>
-
-            <!-- Pie de Página -->
-            <p class="text-center text-[11px] text-[#A8A29E] mt-6">
-                Plataforma de apoyo docente &bull; 2026
-            </p>
         </div>
     </div>
 </template>
