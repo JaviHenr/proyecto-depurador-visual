@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
+use App\Models\Usuario;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -12,27 +12,25 @@ class DatabaseSeeder extends Seeder
     use WithoutModelEvents;
 
     /**
-     * Siembra o puebla la base de datos de la aplicación.
+     * Crea o actualiza los usuarios de prueba.
      */
     public function run(): void
     {
-        // Usuario Profesor
-        User::updateOrCreate(
+        Usuario::updateOrCreate(
             ['email' => 'profesor@depurador.test'],
             [
-                'name' => 'Profesor',
-                'password' => Hash::make('profesor123'),
-                'role' => 'profesor',
+                'nombre_usuario' => 'Profesor',
+                'contrasena' => Hash::make('profesor123'),
+                'rol' => 'profesor',
             ]
         );
 
-        // Usuario Estudiante
-        User::updateOrCreate(
+        Usuario::updateOrCreate(
             ['email' => 'estudiante@depurador.test'],
             [
-                'name' => 'Estudiante',
-                'password' => Hash::make('estudiante123'),
-                'role' => 'estudiante',
+                'nombre_usuario' => 'Estudiante',
+                'contrasena' => Hash::make('estudiante123'),
+                'rol' => 'estudiante',
             ]
         );
     }

@@ -6,25 +6,25 @@ const showPassword = ref(false);
 
 const form = useForm({
     email: '',
-    password: '',
+    contrasena: '',
     remember: false,
 });
 
 const submit = () => {
     form.post('/login', {
         onFinish: () => {
-            form.password = '';
+            form.contrasena = '';
         },
     });
 };
 
-const quickLogin = (role: 'profesor' | 'estudiante') => {
-    if (role === 'profesor') {
+const quickLogin = (rol: 'profesor' | 'estudiante') => {
+    if (rol === 'profesor') {
         form.email = 'profesor@depurador.test';
-        form.password = 'profesor123';
+        form.contrasena = 'profesor123';
     } else {
         form.email = 'estudiante@depurador.test';
-        form.password = 'estudiante123';
+        form.contrasena = 'estudiante123';
     }
     submit();
 };
@@ -81,7 +81,7 @@ const quickLogin = (role: 'profesor' | 'estudiante') => {
                         <div class="relative">
                             <input
                                 id="password"
-                                v-model="form.password"
+                                v-model="form.contrasena"
                                 :type="showPassword ? 'text' : 'password'"
                                 required
                                 autocomplete="current-password"

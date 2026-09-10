@@ -13,19 +13,28 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
- * @property string $name
+ * @property string $nombre_usuario
  * @property string $email
- * @property string $role
+ * @property string $rol
  * @property Carbon|null $email_verified_at
- * @property string $password
+ * @property string $contrasena
  * @property string|null $remember_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'role'])]
-#[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+#[Fillable(['nombre_usuario', 'email', 'contrasena', 'rol'])]
+#[Hidden(['contrasena', 'remember_token'])]
+class Usuario extends Authenticatable
 {
+
+    protected $table = 'usuario';
+    protected $primaryKey = 'id_usuario';
+
+    // Si tu tabla no tiene created_at ni updated_at:
+    public $timestamps = false;
+
+    // Conserva tus demás propiedades y métodos.
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
@@ -38,7 +47,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'contrasena' => 'hashed',
         ];
     }
 
@@ -47,7 +56,7 @@ class User extends Authenticatable
      */
     public function isProfesor(): bool
     {
-        return $this->role === 'profesor';
+        return $this->rol === 'profesor';
     }
 
     /**
@@ -55,6 +64,15 @@ class User extends Authenticatable
      */
     public function isEstudiante(): bool
     {
-        return $this->role === 'estudiante';
+        return $this->rol === 'estudiante';
+    }
+
+    protected $hidden = [
+        'contrasena',
+    ];
+
+    public function getAuthPasswordName()
+    {
+        return 'contrasena';
     }
 }

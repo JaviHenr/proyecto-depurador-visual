@@ -24,10 +24,16 @@ class LoginController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $credentials = $request->validate([
+        $datos = $request->validate([
             'email' => ['required', 'string', 'email'],
-            'password' => ['required', 'string'],
+            'contrasena' => ['required', 'string'],
         ]);
+
+        // Laravel requiere la clave "password" para autenticar.
+        $credentials = [
+            'email' => $datos['email'],
+            'password' => $datos['contrasena'],
+        ];
 
         $remember = $request->boolean('remember');
 
