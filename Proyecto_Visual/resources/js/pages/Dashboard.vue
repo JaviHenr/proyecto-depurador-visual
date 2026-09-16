@@ -6,7 +6,6 @@ import type { Auth, Usuario } from '@/types';
 interface NavItem {
     id: string;
     label: string;
-    icon: string;
 }
 
 interface Tarjeta {
@@ -39,10 +38,10 @@ const logout = () => {
 
 // Estado para la navegación lateral
 const navItems = ref<NavItem[]>([
-    { id: 'inicio', label: 'Inicio', icon: '✨' },
-    { id: 'secciones', label: 'Secciones', icon: '📖' },
-    { id: 'actividades', label: 'Actividades', icon: '📋' },
-    { id: 'ajustes', label: 'Ajustes', icon: '⚙️' }
+    { id: 'inicio', label: 'Inicio'},
+    { id: 'secciones', label: 'Secciones'},
+    { id: 'actividades', label: 'Actividades'},
+    { id: 'ajustes', label: 'Ajustes' }
 ]);
 const activeTab = ref('inicio');
 
@@ -57,11 +56,6 @@ const tarjetas = ref<Tarjeta[]>([
         id: 2,
         titulo: 'Actividades',
         descripcion: 'Actividades a realizar y estado de las mismas.'
-    },
-    {
-        id: 3,
-        titulo: 'Notas Rápidas',
-        descripcion: 'Anotaciones y recordatorios de actividades pendientes.'
     },
     {
         id: 4,
@@ -101,7 +95,6 @@ const seleccionarTarjeta = (tarjeta: Tarjeta) => {
                     :class="{ active: activeTab === item.id }"
                     @click="activeTab = item.id"
                 >
-                    <span class="nav-icon">{{ item.icon }}</span>
                     <span>{{ item.label }}</span>
                 </button>
             </nav>
@@ -131,7 +124,7 @@ const seleccionarTarjeta = (tarjeta: Tarjeta) => {
             <!-- Encabezado superior -->
             <header class="top-header">
                 <div class="saludo">
-                    <h1>¡Hola, <span v-if="currentUser"> {{ userName }}</span>!</h1>
+                    <h1>Hola, <span v-if="currentUser"> {{ userName }}</span></h1>
                     <p>Aquí puedes realizar actividades de depuración.</p>
                 </div>
                 <div class="header-actions">
