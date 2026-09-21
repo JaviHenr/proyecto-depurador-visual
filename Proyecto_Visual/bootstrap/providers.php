@@ -2,6 +2,9 @@
 
 use App\Providers\AppServiceProvider;
 
+
+
 return [
     AppServiceProvider::class,
+    App\Providers\AulaServiceProvider::class,
 ];

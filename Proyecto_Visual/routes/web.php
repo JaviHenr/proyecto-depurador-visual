@@ -1,8 +1,9 @@
 <?php
-
+require __DIR__.'/aula.php';
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
+
 
 // Redirigir la raíz al login o al dashboard según autenticación
 Route::get('/', function () {
@@ -30,9 +31,9 @@ Route::get('/actividades', function () {
     return \Inertia\Inertia::render('Actividades');
 })->middleware('auth');
 
-Route::get('/secciones', function () {
-    return \Inertia\Inertia::render('Secciones');
-})->middleware('auth');
+//Route::get('/secciones', function () {
+//    return \Inertia\Inertia::render('Secciones');
+//})->middleware('auth');
 
 Route::get('/depurador', function () {
        return \Inertia\Inertia::render('DepuradorVisual');
