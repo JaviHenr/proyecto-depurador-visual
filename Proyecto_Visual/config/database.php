@@ -7,13 +7,13 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Default Database Connection Name
+    | Nombre de la Conexión Predeterminada de Base de Datos
     |--------------------------------------------------------------------------
     |
-    | Here you may specify which of the database connections below you wish
-    | to use as your default connection for database operations. This is
-    | the connection which will be utilized unless another connection
-    | is explicitly specified when you execute a query / statement.
+    | Aquí puedes especificar cuál de las siguientes conexiones a base de datos
+    | deseas usar como tu conexión predeterminada para las operaciones. Esta
+    | es la conexión que se utilizará a menos que se especifique explícitamente
+    | otra conexión al ejecutar una consulta o sentencia.
     |
     */
 
@@ -21,12 +21,12 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Database Connections
+    | Conexiones de Base de Datos
     |--------------------------------------------------------------------------
     |
-    | Below are all of the database connections defined for your application.
-    | An example configuration is provided for each database system which
-    | is supported by Laravel. You're free to add / remove connections.
+    | A continuación se definen todas las conexiones de base de datos de tu
+    | aplicación. Se proporciona una configuración de ejemplo para cada
+    | motor compatible con Laravel. Puedes añadir o eliminar conexiones libremente.
     |
     */
 
@@ -118,12 +118,12 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Migration Repository Table
+    | Tabla del Repositorio de Migraciones
     |--------------------------------------------------------------------------
     |
-    | This table keeps track of all the migrations that have already run for
-    | your application. Using this information, we can determine which of
-    | the migrations on disk haven't actually been run on the database.
+    | Esta tabla realiza un seguimiento de todas las migraciones que ya se
+    | han ejecutado en tu aplicación. Con esta información, podemos determinar
+    | cuáles de las migraciones en disco aún no se han aplicado en la base de datos.
     |
     */
 
@@ -134,12 +134,12 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Redis Databases
+    | Bases de Datos Redis
     |--------------------------------------------------------------------------
     |
-    | Redis is an open source, fast, and advanced key-value store that also
-    | provides a richer body of commands than a typical key-value system
-    | such as Memcached. You may define your connection settings here.
+    | Redis es un almacén clave-valor de código abierto, rápido y avanzado que
+    | además ofrece un conjunto de comandos más amplio que un sistema clave-valor
+    | típico como Memcached. Puedes definir los ajustes de conexión aquí.
     |
     */
 

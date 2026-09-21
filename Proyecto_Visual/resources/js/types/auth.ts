@@ -1,14 +1,10 @@
-export type User = {
-    id: number;
-    name: string;
+export type Usuario = {
+    id_usuario: number;
+    nombre_usuario: string;
     email: string;
-    avatar?: string;
-    email_verified_at: string | null;
-    created_at: string;
-    updated_at: string;
-    [key: string]: unknown;
+    rol: 'profesor' | 'estudiante';
 };
 
 export type Auth = {
-    user: User;
+    user: Usuario | null;
 };

@@ -1,11 +1,17 @@
 @import 'tailwindcss';
+@import './barraLateral.css';
+@import './dashboard.css';
+@import './depuradorVisual.css';
+@import './secciones.css';
+@import './compilador.css';
+@import './login.css';
+@import './actividades.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
 @theme inline {
     --font-sans:
-        Instrument Sans, ui-sans-serif, system-ui, sans-serif,
-        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-        'Noto Color Emoji';
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif,
+        "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }

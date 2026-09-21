@@ -1,17 +1,17 @@
 <?php
 
-use App\Models\User;
+use App\Models\Usuario;
 
 return [
 
     /*
     |--------------------------------------------------------------------------
-    | Authentication Defaults
+    | Valores Predeterminados de Autenticación
     |--------------------------------------------------------------------------
     |
-    | This option defines the default authentication "guard" and password
-    | reset "broker" for your application. You may change these values
-    | as required, but they're a perfect start for most applications.
+    | Esta opción define el "guard" (guardián) de autenticación y el "broker"
+    | de restablecimiento de contraseña por defecto para la aplicación. Puedes
+    | cambiar estos valores según sea necesario.
     |
     */
 
@@ -22,18 +22,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Authentication Guards
+    | Guardianes de Autenticación (Guards)
     |--------------------------------------------------------------------------
     |
-    | Next, you may define every authentication guard for your application.
-    | Of course, a great default configuration has been defined for you
-    | which utilizes session storage plus the Eloquent user provider.
+    | A continuación puedes definir cada uno de los guardianes de autenticación.
+    | Se incluye una configuración predeterminada que utiliza almacenamiento
+    | en sesión junto con el proveedor de usuarios Eloquent.
     |
-    | All authentication guards have a user provider, which defines how the
-    | users are actually retrieved out of your database or other storage
-    | system used by the application. Typically, Eloquent is utilized.
+    | Todos los guards tienen un proveedor de usuarios, que define cómo se
+    | recuperan los usuarios de la base de datos u otro almacenamiento.
     |
-    | Supported: "session"
+    | Soportados: "session"
     |
     */
 
@@ -46,25 +45,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | User Providers
+    | Proveedores de Usuarios (User Providers)
     |--------------------------------------------------------------------------
     |
-    | All authentication guards have a user provider, which defines how the
-    | users are actually retrieved out of your database or other storage
-    | system used by the application. Typically, Eloquent is utilized.
+    | Todos los guards de autenticación tienen un proveedor de usuarios, que
+    | define cómo se obtienen los usuarios desde la base de datos o almacenamiento.
+    | Habitualmente se utiliza Eloquent.
     |
-    | If you have multiple user tables or models you may configure multiple
-    | providers to represent the model / table. These providers may then
-    | be assigned to any extra authentication guards you have defined.
+    | Si tienes múltiples tablas o modelos de usuarios, puedes configurar múltiples
+    | proveedores y asignarlos a diferentes guards de autenticación.
     |
-    | Supported: "database", "eloquent"
+    | Soportados: "database", "eloquent"
     |
     */
 
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', User::class),
+            'model' => env('AUTH_MODEL', Usuario::class),
         ],
 
         // 'users' => [
@@ -75,20 +73,16 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Resetting Passwords
+    | Restablecimiento de Contraseñas
     |--------------------------------------------------------------------------
     |
-    | These configuration options specify the behavior of Laravel's password
-    | reset functionality, including the table utilized for token storage
-    | and the user provider that is invoked to actually retrieve users.
+    | Estas opciones especifican el comportamiento del restablecimiento de
+    | contraseñas en Laravel, incluyendo la tabla para almacenar tokens y el
+    | proveedor de usuarios que se invoca para recuperarlos.
     |
-    | The expiry time is the number of minutes that each reset token will be
-    | considered valid. This security feature keeps tokens short-lived so
-    | they have less time to be guessed. You may change this as needed.
-    |
-    | The throttle setting is the number of seconds a user must wait before
-    | generating more password reset tokens. This prevents the user from
-    | quickly generating a very large amount of password reset tokens.
+    | El tiempo de expiración (expire) son los minutos durante los cuales el
+    | token será válido. El límite de frecuencia (throttle) define los segundos
+    | que un usuario debe esperar antes de generar nuevos tokens.
     |
     */
 
@@ -103,12 +97,12 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Password Confirmation Timeout
+    | Tiempo de Espera para Confirmación de Contraseña
     |--------------------------------------------------------------------------
     |
-    | Here you may define the number of seconds before a password confirmation
-    | window expires and users are asked to re-enter their password via the
-    | confirmation screen. By default, the timeout lasts for three hours.
+    | Aquí puedes definir el número de segundos antes de que expire la ventana
+    | de confirmación de contraseña y se pida al usuario que vuelva a ingresarla.
+    | Por defecto, el tiempo de espera dura 3 horas (10800 segundos).
     |
     */
 
