@@ -1,4 +1,11 @@
 @import 'tailwindcss';
+@import './barraLateral.css';
+@import './dashboard.css';
+@import './depuradorVisual.css';
+@import './secciones.css';
+@import './compilador.css';
+@import './login.css';
+@import './actividades.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';

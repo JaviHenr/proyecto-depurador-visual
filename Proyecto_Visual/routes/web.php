@@ -29,7 +29,7 @@ Route::get('/Compilador', function () {
 
 Route::get('/actividades', function () {
     return \Inertia\Inertia::render('Actividades');
-})->middleware('auth');
+})->middleware('auth')->name('actividades');
 
 //Route::get('/secciones', function () {
 //    return \Inertia\Inertia::render('Secciones');
