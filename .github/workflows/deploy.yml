@@ -1,0 +1,82 @@
+name: Preparar Proyecto Visual
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - main
+    paths:
+      - "Proyecto_Visual/**"
+      - ".github/workflows/preparar-ubuntu.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  preparar-proyecto:
+    name: Instalar Laravel, Inertia y Vue
+    runs-on:
+      - self-hosted
+      - linux
+      - x64
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: Proyecto_Visual
+
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v6
+        with:
+          clean: false
+
+      - name: Mostrar ubicación del proyecto
+        run: |
+          echo "Repositorio completo: $GITHUB_WORKSPACE"
+          echo "Aplicación Laravel: $GITHUB_WORKSPACE/Proyecto_Visual"
+          pwd
+          ls -la
+
+      - name: Instalar PHP y Composer
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, pdo_pgsql, bcmath, intl, xml
+          tools: composer:v2
+          coverage: none
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: Proyecto_Visual/package-lock.json
+
+      - name: Crear archivo de entorno
+        run: |
+          if [ ! -f .env ]; then
+            cp .env.example .env
+            echo "Se creó el archivo .env"
+          else
+            echo "El archivo .env ya existe"
+          fi
+
+      - name: Instalar dependencias Laravel
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Generar clave de Laravel
+        run: |
+          if ! grep -q "^APP_KEY=base64:" .env; then
+            php artisan key:generate --force
+          fi
+
+      - name: Instalar dependencias Vue
+        run: npm ci
+
+      - name: Compilar Vue e Inertia
+        run: npm run build
+
+      - name: Verificar instalación
+        run: php artisan about
