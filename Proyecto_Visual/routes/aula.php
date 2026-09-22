@@ -4,6 +4,9 @@ use App\Http\Controllers\Aula\{ActividadController, CodigoController, Estudiante
 use Illuminate\Support\Facades\Route;
 
 // Incluir una sola vez desde web.php: require __DIR__.'/aula.php';
+Route::get('/depurador/{codigo?}', [CodigoController::class, 'depurador'])
+    ->middleware('auth')->whereNumber('codigo')->name('depurador');
+
 Route::middleware('auth')->name('aula.')->group(function () {
     Route::get('/secciones', [SeccionController::class, 'index'])->name('secciones.index');
     Route::post('/secciones', [SeccionController::class, 'store'])->name('secciones.store');

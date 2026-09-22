@@ -73,7 +73,7 @@ function guardar() {
                 </label>
             </div>
             <div class="acciones entre">
-                <button type="submit" class="btn primary" :disabled="form.processing">{{ form.processing ? 'Guardando…' : 'Guardar código' }}</button>
+                <button type="submit" class="btn primary" :disabled="form.processing">{{ form.processing ? 'Guardando…' : 'Guardar y abrir depurador' }}</button>
                 <span class="muted">{{ form.contenido_codigo.split('\n').length }} líneas · {{ form.contenido_codigo.length }} caracteres</span>
             </div>
             <p v-if="codigo?.fecha_creacion_codigo" class="muted" style="margin-top: 16px">Creado el {{ codigo.fecha_creacion_codigo }}.</p>

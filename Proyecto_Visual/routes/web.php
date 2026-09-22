@@ -35,6 +35,6 @@ Route::get('/actividades', function () {
 //    return \Inertia\Inertia::render('Secciones');
 //})->middleware('auth');
 
-Route::get('/depurador', function () {
-       return \Inertia\Inertia::render('DepuradorVisual');
-   })->middleware('auth')->name('depurador');
+//Route::get('/depurador', function () {
+//       return \Inertia\Inertia::render('DepuradorVisual');
+//   })->middleware('auth')->name('depurador');

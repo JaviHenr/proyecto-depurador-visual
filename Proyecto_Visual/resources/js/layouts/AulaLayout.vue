@@ -13,7 +13,7 @@ const sesion = useForm({});
             <nav aria-label="Menú principal">
                 <Link href="/dashboard"><span aria-hidden="true">✨</span> Inicio</Link>
                 <Link href="/secciones" :class="{ seleccionado: activo === 'secciones' }" :aria-current="activo === 'secciones' ? 'page' : undefined"><span aria-hidden="true">📖</span> Secciones</Link>
-                <Link href="/codigos" :class="{ seleccionado: activo === 'codigos' }" :aria-current="activo === 'codigos' ? 'page' : undefined"><span aria-hidden="true">⌘</span> Mis códigos</Link>
+                <Link href="/codigos" :class="{ seleccionado: activo === 'codigos' }" :aria-current="activo === 'codigos' ? 'page' : undefined"><span aria-hidden="true">⌘</span> Códigos</Link>
             </nav>
             <div class="aula-perfil"><span class="avatar">{{ page.props.actor.nombre.charAt(0).toUpperCase() }}</span><div><strong>{{ page.props.actor.nombre }}</strong><small>{{ page.props.actor.rol }}</small></div></div>
         </aside>

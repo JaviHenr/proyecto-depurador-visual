@@ -158,13 +158,16 @@ class AulaCrudTest extends TestCase
         $this->assertSame(now()->toDateString(), $codigo->fecha_creacion_codigo->toDateString());
         $url = '/codigos/'.$codigo->id_codigo;
         $huella = $codigo->huella();
-        $this->get($url.'/editar')->assertInertia(fn (Assert $page) => $page
-            ->component('Aula/Codigos/Edit')->where('codigo.huella', $huella));
+        $this->get($url.'/editar')->assertRedirect('/depurador/'.$codigo->id_codigo);
+        $this->get('/depurador/'.$codigo->id_codigo)->assertInertia(fn (Assert $page) => $page
+            ->component('DepuradorVisual')->where('codigo.huella', $huella)
+            ->where('permisosCodigo.editar', true));
         $nuevos = array_replace($datos, ['contenido_codigo' => 'public class Editado {}', 'huella' => $huella]);
         $this->put($url, $nuevos)->assertRedirect();
         $this->put($url, $datos + ['huella' => $huella])->assertSessionHasErrors('huella');
         $this->assertSame('public class Editado {}', $codigo->fresh()->contenido_codigo);
         $this->actingAs($otro)->get($url.'/editar')->assertForbidden();
+        $this->get('/depurador/'.$codigo->id_codigo)->assertForbidden();
         $this->put($url, $nuevos)->assertForbidden();
         $this->delete($url)->assertForbidden();
         $this->get('/codigos')->assertInertia(fn (Assert $page) => $page->has('codigos.data', 0));
@@ -242,6 +245,25 @@ class AulaCrudTest extends TestCase
             ->where('permisos.gestionar', false));
         $this->post('/codigos', $this->datosCodigo($actividad->id_actividad))->assertRedirect();
         $codigo = Codigo::where('id_usuario', $estudiante->getAuthIdentifier())->firstOrFail();
+        $this->post('/codigos', $this->datosCodigo())->assertRedirect();
+        $this->assertDatabaseHas('codigo', [
+            'id_usuario' => $estudiante->getAuthIdentifier(), 'id_actividad' => null,
+        ]);
+
+        // El profesor ve la entrega en modo de solo lectura, nunca los códigos personales.
+        $this->actingAs($profesor)->get('/codigos?vista=estudiantes')->assertInertia(fn (Assert $page) => $page
+            ->component('Aula/Codigos/Index')
+            ->has('codigos.data', 1)
+            ->where('codigos.data.0.id_codigo', $codigo->id_codigo)
+            ->where('codigos.data.0.permisos.editar', false));
+        $this->get('/depurador/'.$codigo->id_codigo)->assertInertia(fn (Assert $page) => $page
+            ->component('DepuradorVisual')
+            ->where('codigo.contenido_codigo', $codigo->contenido_codigo)
+            ->where('permisosCodigo.editar', false));
+        $this->put('/codigos/'.$codigo->id_codigo, $this->datosCodigo($actividad->id_actividad) + [
+            'huella' => $codigo->huella(),
+        ])->assertForbidden();
+        $this->delete('/codigos/'.$codigo->id_codigo)->assertForbidden();
 
         // Ver no implica administrar.
         $base = '/secciones/'.$seccion->id_seccion;
@@ -259,8 +281,10 @@ class AulaCrudTest extends TestCase
             'id_usuario' => $estudiante->getAuthIdentifier(),
         ]);
         $this->actingAs($estudiante)->get($base)->assertForbidden();
+        $this->actingAs($profesor)->get('/depurador/'.$codigo->id_codigo)->assertForbidden();
         $url = '/codigos/'.$codigo->id_codigo;
-        $this->get($url.'/editar')->assertOk();
+        $this->actingAs($estudiante)->get($url.'/editar')->assertRedirect('/depurador/'.$codigo->id_codigo);
+        $this->get('/depurador/'.$codigo->id_codigo)->assertOk();
         $this->put($url, $this->datosCodigo($actividad->id_actividad) + ['huella' => $codigo->fresh()->huella()])->assertRedirect();
         $this->put($url, $this->datosCodigo() + ['huella' => $codigo->fresh()->huella()])->assertRedirect();
         $this->assertNull($codigo->fresh()->id_actividad);

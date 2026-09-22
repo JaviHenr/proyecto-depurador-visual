@@ -41,14 +41,18 @@ export interface Estudiante {
 export interface CodigoResumen {
     id_codigo: number;
     id_actividad: number | null;
+    id_usuario: number;
     nombre_codigo: string | null;
     nombre_archivo: string | null;
     formato: string | null;
     fecha_creacion_codigo: string | null;
+    autor_nombre: string;
+    autor_email: string | null;
+    actividad_nombre: string | null;
+    permisos: { editar: boolean };
 }
 
 export interface Codigo extends CodigoResumen {
-    id_usuario: number | null;
     contenido_codigo: string | null;
     huella: string; // Calculada por el servidor; no existe como columna.
 }

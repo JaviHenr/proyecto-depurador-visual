@@ -132,6 +132,7 @@ function buscarActividades() {
                 <div class="acciones nota">
                     <Link :href="`/codigos/nuevo?actividad=${actividad.id_actividad}`" class="btn primary">+ Crear código</Link>
                     <Link :href="`/codigos?actividad=${actividad.id_actividad}`" class="btn">Mis códigos de esta actividad</Link>
+                    <Link v-if="permisos.gestionar" :href="`/codigos?actividad=${actividad.id_actividad}&vista=estudiantes`" class="btn">Códigos de estudiantes</Link>
                     <button v-if="actividad.permisos.editar" type="button" class="btn" @click="editandoId = editandoId === actividad.id_actividad ? null : actividad.id_actividad">{{ editandoId === actividad.id_actividad ? 'Cerrar formulario' : 'Editar' }}</button>
                     <button v-if="actividad.permisos.editar" type="button" class="btn danger" :disabled="accion.processing" @click="quitarActividad(actividad)">Eliminar</button>
                     <button v-if="actividad.permisos.desvincular" type="button" class="btn danger" :disabled="accion.processing" @click="quitarActividad(actividad, true)">Retirar de esta sección</button>

@@ -19,17 +19,23 @@ class CodigoPolicy
 
     public function view(Authenticatable $usuario, Codigo $codigo): bool
     {
-        return $this->viewAny($usuario) && $codigo->id_usuario !== null
-            && (string) $codigo->id_usuario === (string) $usuario->getAuthIdentifier();
+        return $this->esAutor($usuario, $codigo)
+            || ($usuario->rol === 'profesor' && $codigo->visibleParaProfesor($usuario));
     }
 
     public function update(Authenticatable $usuario, Codigo $codigo): bool
     {
-        return $this->view($usuario, $codigo);
+        return $this->esAutor($usuario, $codigo);
     }
 
     public function delete(Authenticatable $usuario, Codigo $codigo): bool
     {
-        return $this->view($usuario, $codigo);
+        return $this->esAutor($usuario, $codigo);
+    }
+
+    private function esAutor(Authenticatable $usuario, Codigo $codigo): bool
+    {
+        return $this->viewAny($usuario) && $codigo->id_usuario !== null
+            && (string) $codigo->id_usuario === (string) $usuario->getAuthIdentifier();
     }
 }

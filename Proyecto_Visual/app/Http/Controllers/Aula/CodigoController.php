@@ -18,18 +18,50 @@ class CodigoController extends AulaController
         $filtros = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
             'actividad' => ['nullable', 'integer', 'min:1'],
+            'vista' => ['nullable', Rule::in(['mios', 'estudiantes'])],
         ]);
         $q = $filtros['q'] ?? '';
         $actividadId = isset($filtros['actividad']) ? (int) $filtros['actividad'] : null;
-        $codigos = Codigo::query()->where('id_usuario', $request->user()->getAuthIdentifier())
-            ->select(['id_codigo', 'id_actividad', 'nombre_codigo', 'nombre_archivo', 'formato', 'fecha_creacion_codigo'])
+        $puedeVerEstudiantes = $request->user()->rol === 'profesor';
+        $vista = $puedeVerEstudiantes ? ($filtros['vista'] ?? 'mios') : 'mios';
+
+        $consulta = Codigo::query()
+            ->with([
+                'autor' => fn ($autor) => $autor->select(['id_usuario', 'nombre_usuario', 'email']),
+                'actividad' => fn ($actividad) => $actividad->select(['id_actividad', 'nombre_actividad']),
+            ]);
+        if ($vista === 'estudiantes') {
+            $consulta->deEstudiantesVisiblesPara($request->user());
+        } else {
+            $consulta->where('codigo.id_usuario', $request->user()->getAuthIdentifier());
+        }
+
+        $codigos = $consulta
+            ->select(['id_codigo', 'id_actividad', 'id_usuario', 'nombre_codigo', 'nombre_archivo', 'formato', 'fecha_creacion_codigo'])
             ->when($q !== '', fn (Builder $query) => $query->where(fn (Builder $busqueda) => $busqueda
                 ->whereRaw('LOWER(nombre_codigo) LIKE ?', ['%'.mb_strtolower($q).'%'])
-                ->orWhereRaw('LOWER(nombre_archivo) LIKE ?', ['%'.mb_strtolower($q).'%'])))
+                ->orWhereRaw('LOWER(nombre_archivo) LIKE ?', ['%'.mb_strtolower($q).'%'])
+                ->when($vista === 'estudiantes', fn (Builder $porAutor) => $porAutor
+                    ->orWhereHas('autor', fn (Builder $autor) => $autor
+                        ->whereRaw('LOWER(nombre_usuario) LIKE ?', ['%'.mb_strtolower($q).'%'])
+                        ->orWhereRaw('LOWER(email) LIKE ?', ['%'.mb_strtolower($q).'%'])))))
             ->when($actividadId !== null, fn (Builder $query) => $query->where('id_actividad', $actividadId))
             ->orderByDesc('id_codigo')->paginate(15)->withQueryString();
+        $codigos->through(fn (Codigo $codigo) => $codigo->only([
+            'id_codigo', 'id_actividad', 'id_usuario', 'nombre_codigo', 'nombre_archivo',
+            'formato', 'fecha_creacion_codigo',
+        ]) + [
+            'autor_nombre' => $codigo->autor?->nombre_usuario ?? 'Usuario',
+            'autor_email' => $codigo->autor?->email,
+            'actividad_nombre' => $codigo->actividad?->nombre_actividad,
+            'permisos' => ['editar' => Gate::allows('update', $codigo)],
+        ]);
+
         return $this->pagina('Aula/Codigos/Index', [
-            'codigos' => $codigos, 'filtros' => ['q' => $q, 'actividad' => $actividadId],
+            'codigos' => $codigos,
+            'filtros' => ['q' => $q, 'actividad' => $actividadId, 'vista' => $vista],
+            'vista' => $vista,
+            'puedeVerEstudiantes' => $puedeVerEstudiantes,
         ]);
     }
 
@@ -56,13 +88,38 @@ class CodigoController extends AulaController
             $codigo->save();
             return $codigo;
         });
-        return to_route('aula.codigos.edit', $codigo)->with('aula_status', 'Código guardado.');
+        return to_route('depurador', ['codigo' => $codigo])
+            ->with('aula_status', 'Código guardado. Ya puedes editarlo y depurarlo.');
     }
 
-    public function edit(Request $request, Codigo $codigo): Response
+    public function edit(Codigo $codigo): RedirectResponse
     {
         Gate::authorize('view', $codigo);
-        return $this->editor($request, $codigo, $codigo->id_actividad);
+        return to_route('depurador', ['codigo' => $codigo]);
+    }
+
+    public function depurador(Request $request, ?Codigo $codigo = null): Response
+    {
+        Gate::authorize('viewAny', Codigo::class);
+        if ($codigo) {
+            Gate::authorize('view', $codigo);
+            $codigo->load(['autor', 'actividad']);
+        }
+
+        return $this->pagina('DepuradorVisual', [
+            'codigo' => $codigo ? $codigo->only([
+                'id_codigo', 'id_actividad', 'id_usuario', 'nombre_codigo', 'nombre_archivo',
+                'formato', 'contenido_codigo', 'fecha_creacion_codigo',
+            ]) + ['huella' => $codigo->huella()] : null,
+            'autorCodigo' => $codigo ? [
+                'nombre' => $codigo->autor?->nombre_usuario ?? 'Usuario',
+                'email' => $codigo->autor?->email,
+            ] : null,
+            'actividadCodigo' => $codigo?->actividad?->nombre_actividad,
+            'permisosCodigo' => [
+                'editar' => $codigo ? Gate::allows('update', $codigo) : false,
+            ],
+        ]);
     }
 
     public function update(Request $request, Codigo $codigo): RedirectResponse
@@ -88,7 +145,7 @@ class CodigoController extends AulaController
             $actual->id_actividad = $actividadId;
             $actual->save();
         });
-        return to_route('aula.codigos.edit', $codigo)->with('aula_status', 'Código actualizado.');
+        return to_route('depurador', ['codigo' => $codigo])->with('aula_status', 'Código actualizado.');
     }
 
     public function destroy(Codigo $codigo): RedirectResponse
