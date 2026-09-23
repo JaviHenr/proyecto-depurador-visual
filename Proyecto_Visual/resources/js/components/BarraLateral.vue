@@ -20,17 +20,19 @@ interface NavItem {
 const page = usePage<{
     auth?: { user?: { nombre_usuario?: string; name?: string; rol?: string } };
     usuario?: { nombre_usuario?: string; name?: string; rol?: string };
+    actor?: { id?: number; nombre?: string; rol?: string };
 }>();
 
 const currentUser = computed(() => page.props.usuario ?? page.props.auth?.user ?? null);
-const userName = computed(() => currentUser.value?.nombre_usuario || currentUser.value?.name || 'Usuario');
-const userRole = computed(() => currentUser.value?.rol || 'Estudiante');
+const userName = computed(() => currentUser.value?.nombre_usuario || currentUser.value?.name || page.props.actor?.nombre || 'Usuario');
+const userRole = computed(() => currentUser.value?.rol || page.props.actor?.rol || 'Estudiante');
 const userInitial = computed(() => userName.value.trim().charAt(0).toUpperCase() || 'U');
 
 const elementosNav = computed<NavItem[]>(() => [
     { id: 'inicio', etiqueta: 'Inicio', ruta: '/dashboard' },
     { id: 'secciones', etiqueta: 'Secciones', ruta: '/secciones' },
     { id: 'actividades', etiqueta: 'Actividades', ruta: '/actividades' },
+    { id: 'codigos', etiqueta: 'Códigos', ruta: '/codigos' },
     { id: 'depurador', etiqueta: 'Depuración', ruta: '/depurador' },
     { id: 'ajustes', etiqueta: 'Ajustes' },
 ]);
