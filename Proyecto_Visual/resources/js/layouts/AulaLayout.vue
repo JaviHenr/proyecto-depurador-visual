@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+<<<<<<< HEAD
+=======
+import BarraLateral from '../components/BarraLateral.vue';
+>>>>>>> origin/feature/login-page
 defineProps<{ titulo: string; descripcion?: string; activo: 'secciones' | 'codigos' }>();
 const page = usePage<{ actor: { id: number; nombre: string; rol: string }; aulaFlash?: string | null }>();
 const sesion = useForm({});
@@ -8,6 +12,7 @@ const sesion = useForm({});
 <template>
     <Head :title="`${titulo} - Depurador Visual`" />
     <div class="aula-app">
+<<<<<<< HEAD
         <aside class="aula-lateral">
             <Link href="/dashboard" class="aula-marca">Depurador Visual</Link>
             <nav aria-label="Menú principal">
@@ -17,6 +22,9 @@ const sesion = useForm({});
             </nav>
             <div class="aula-perfil"><span class="avatar">{{ page.props.actor.nombre.charAt(0).toUpperCase() }}</span><div><strong>{{ page.props.actor.nombre }}</strong><small>{{ page.props.actor.rol }}</small></div></div>
         </aside>
+=======
+        <BarraLateral :pestana-activa="activo" />
+>>>>>>> origin/feature/login-page
         <main class="aula-main">
             <header class="aula-encabezado"><div><h1>{{ titulo }}</h1><p v-if="descripcion" class="muted">{{ descripcion }}</p></div><button type="button" class="btn" :disabled="sesion.processing" @click="sesion.post('/logout')">Cerrar sesión</button></header>
             <p v-if="page.props.aulaFlash" class="aviso" role="status">{{ page.props.aulaFlash }}</p>
@@ -26,7 +34,11 @@ const sesion = useForm({});
 </template>
 
 <style>
+<<<<<<< HEAD
 .aula-app { display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: 100vh; background: #faf7f3; color: #414454; font: 14px/1.6 'Segoe UI', system-ui, sans-serif; }
+=======
+.aula-app { display: grid; grid-template-columns: 240px minmax(0, 1fr); min-height: 100vh; background: #faf7f3; color: #414454; font: 14px/1.6 'Segoe UI', system-ui, sans-serif; }
+>>>>>>> origin/feature/login-page
 .aula-app * { box-sizing: border-box; }
 .aula-app h1, .aula-app h2, .aula-app h3, .aula-app p { margin: 0; overflow-wrap: anywhere; }
 .aula-app h1 { font-size: 29px; line-height: 1.3; letter-spacing: -.4px; }
@@ -37,6 +49,7 @@ const sesion = useForm({});
 .aula-app :focus-visible { outline: 2px solid #9b79e5; outline-offset: 3px; }
 .aula-app button { cursor: pointer; }
 .aula-app button:disabled { opacity: .5; cursor: not-allowed; }
+<<<<<<< HEAD
 .aula-app .aula-lateral { position: sticky; top: 0; display: flex; flex-direction: column; height: 100vh; padding: 22px 12px; background: #fff; }
 .aula-app .aula-marca { padding: 0 8px; font-size: 20px; font-weight: 700; color: #7455ff; white-space: nowrap; }
 .aula-app .aula-lateral nav { display: grid; gap: 8px; margin-top: 32px; }
@@ -47,6 +60,8 @@ const sesion = useForm({});
 .aula-app .aula-perfil > div { min-width: 0; }
 .aula-app .aula-perfil strong { display: block; max-width: 142px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 500; }
 .aula-app .aula-perfil small { display: block; color: #9284a0; text-transform: capitalize; }
+=======
+>>>>>>> origin/feature/login-page
 .aula-app .avatar { display: grid; place-items: center; flex-shrink: 0; width: 35px; height: 35px; border-radius: 50%; background: #dff2ff; color: #0095e7; font-weight: 700; }
 .aula-app .aula-main { width: 100%; max-width: 1400px; min-width: 0; margin: 0 auto; padding: 30px 40px 45px; }
 .aula-app .aula-encabezado { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 28px; }
@@ -86,6 +101,10 @@ const sesion = useForm({});
 .aula-app .vacio { padding: 32px; border: 1px dashed #ddcfea; border-radius: 18px; text-align: center; color: #8a7896; background: #fff; }
 .aula-app .paginacion { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 13px; margin-top: 22px; color: #92809f; font-size: 12px; }
 @media(max-width:1100px) { .aula-app .tarjetas { grid-template-columns: repeat(2,minmax(0,1fr)); } .aula-app .aula-main { padding: 26px; } }
+<<<<<<< HEAD
 @media(max-width:700px) { .aula-app { grid-template-columns: minmax(0,1fr); } .aula-app .aula-lateral { position: static; height: auto; padding: 18px 16px 10px; } .aula-app .aula-lateral nav { display: flex; gap: 5px; overflow-x: auto; margin-top: 18px; } .aula-app .aula-lateral nav a { white-space: nowrap; padding: 8px 11px; } .aula-app .aula-perfil { display: none; } .aula-app .aula-main { padding: 24px 18px; } .aula-app .campos { grid-template-columns: minmax(0,1fr); } }
+=======
+@media(max-width:700px) { .aula-app { grid-template-columns: minmax(0,1fr); } .aula-app .aula-main { padding: 24px 18px; } .aula-app .campos { grid-template-columns: minmax(0,1fr); } }
+>>>>>>> origin/feature/login-page
 @media(max-width:480px) { .aula-app .tarjetas { grid-template-columns: minmax(0,1fr); } .aula-app .aula-encabezado { align-items: flex-start; flex-direction: column; } .aula-app .panel { padding: 20px; } }
 </style>

@@ -230,10 +230,19 @@ function cerrarSesion() {
         </main>
     </div>
 </template>
+<<<<<<< HEAD
 
 <style>
 /* Todas las reglas están limitadas a esta página; no cambian las otras vistas. */
 .depurador-app { --dv-violeta: #7455ef; display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: 100vh; background: #faf7f3; color: #414454; font: 14px/1.55 'Segoe UI', system-ui, sans-serif; }
+=======
+<<<<<<< Updated upstream
+=======
+
+<style>
+/* Todas las reglas están limitadas a esta página; no cambian las otras vistas. */
+.depurador-app { --dv-violeta: #7455ef; display: grid; grid-template-columns: 240px minmax(0, 1fr); min-height: 100vh; background: #faf7f3; color: #414454; font: 14px/1.55 'Segoe UI', system-ui, sans-serif; }
+>>>>>>> origin/feature/login-page
 .depurador-app *, .depurador-app *::before, .depurador-app *::after { box-sizing: border-box; }
 .depurador-app h1, .depurador-app h2, .depurador-app h3, .depurador-app p { margin: 0; }
 .depurador-app button, .depurador-app input, .depurador-app select, .depurador-app textarea { font: inherit; }
@@ -241,6 +250,7 @@ function cerrarSesion() {
 .depurador-app button:disabled { opacity: .45; cursor: not-allowed; }
 .depurador-app a { text-decoration: none; }
 .depurador-app :focus-visible { outline: 2px solid #9070dd; outline-offset: 3px; }
+<<<<<<< HEAD
 .depurador-app .dv-lateral { position: sticky; top: 0; display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow-y: auto; padding: 20px 12px 12px; background: #fff; }
 .depurador-app .dv-marca { display: block; padding: 0 8px; color: #7455ff; font-size: 20px; font-weight: 700; white-space: nowrap; }
 .depurador-app .dv-menu { display: grid; gap: 8px; margin-top: 32px; }
@@ -256,6 +266,9 @@ function cerrarSesion() {
 .depurador-app .dv-avatar { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%; color: #0095e7; background: #dff2ff; font-size: 14px; font-weight: 700; }
 .depurador-app .dv-avatar-pequeno { width: 34px; height: 34px; font-size: 12px; }
 .depurador-app .dv-salir-lateral { margin-left: 8px; padding: 9px 8px; border: 0; background: transparent; color: #c12626; }
+=======
+.depurador-app .dv-avatar { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%; color: #0095e7; background: #dff2ff; font-size: 14px; font-weight: 700; }
+>>>>>>> origin/feature/login-page
 .depurador-app .dv-contenido { width: 100%; max-width: 1480px; min-width: 0; margin: 0 auto; padding: 28px 36px 40px 48px; }
 .depurador-app .dv-encabezado { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 30px; }
 .depurador-app .dv-encabezado h1 { color: #414454; font-size: 30px; font-weight: 700; line-height: 1.3; letter-spacing: -.6px; }
@@ -308,8 +321,12 @@ function cerrarSesion() {
     .depurador-app .dv-columnas { gap: 18px; grid-template-columns: minmax(0, 1fr) minmax(290px, .9fr); }
 }
 @media (max-width: 1000px) {
+<<<<<<< HEAD
     .depurador-app { grid-template-columns: 205px minmax(0, 1fr); }
     .depurador-app .dv-marca { font-size: 18px; }
+=======
+    .depurador-app { grid-template-columns: 240px minmax(0, 1fr); }
+>>>>>>> origin/feature/login-page
     .depurador-app .dv-columnas { grid-template-columns: minmax(0, 1fr); }
     .depurador-app .dv-acciones-cuenta .dv-avatar { display: none; }
     .depurador-app .dv-encabezado h1 { font-size: 26px; }
@@ -318,11 +335,14 @@ function cerrarSesion() {
 }
 @media (max-width: 700px) {
     .depurador-app { grid-template-columns: minmax(0, 1fr); }
+<<<<<<< HEAD
     .depurador-app .dv-lateral { position: static; height: auto; padding: 18px 16px 12px; }
     .depurador-app .dv-marca { padding: 0 4px; }
     .depurador-app .dv-menu { display: flex; gap: 6px; margin-top: 18px; overflow-x: auto; }
     .depurador-app .dv-menu-item { flex: 0 0 auto; width: auto; min-height: 40px; padding: 8px 12px; gap: 8px; font-size: 13px; }
     .depurador-app .dv-cuenta { display: none; }
+=======
+>>>>>>> origin/feature/login-page
     .depurador-app .dv-contenido { padding: 25px 20px 32px; }
     .depurador-app .dv-encabezado { align-items: flex-start; gap: 12px; }
     .depurador-app .dv-encabezado p { font-size: 13px; }
@@ -337,3 +357,7 @@ function cerrarSesion() {
     .depurador-app .dv-contenido { padding-right: 16px; padding-left: 16px; }
 }
 </style>
+<<<<<<< HEAD
+=======
+>>>>>>> Stashed changes
+>>>>>>> origin/feature/login-page
