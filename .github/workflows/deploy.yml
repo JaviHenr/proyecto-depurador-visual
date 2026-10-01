@@ -1,8 +1,3 @@
-# Guardar en .github/workflows/deploy.yml, en la raiz del repositorio.
-# Requiere el runner en este Ubuntu como talleruser11 y version >= 2.327.1.
-# PHP >= 8.4.1, Composer 2, rsync y curl deben estar instalados para ese usuario.
-# Iniciar Nginx y depurador-web en PM2 desde SSH antes del primer despliegue.
-# El .env permanente y storage permanecen en /var/www/depurador.
 name: Publicar Proyecto Visual con PM2
 
 "on":
