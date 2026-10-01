@@ -1,3 +1,99 @@
+# Guardar en .github/workflows/deploy.yml, en la raiz del repositorio.
+# Requiere el runner en este Ubuntu como talleruser11 y version >= 2.327.1.
+# PHP >= 8.4.1, Composer 2, rsync y curl deben estar instalados para ese usuario.
+# Iniciar Nginx y depurador-web en PM2 desde SSH antes del primer despliegue.
+# El .env permanente y storage permanecen en /var/www/depurador.
+name: Publicar Proyecto Visual con PM2
+
+"on":
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "Proyecto_Visual/**"
+      - ".github/workflows/deploy.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: depurador-produccion
+  cancel-in-progress: false
+
+env:
+  DEPLOY_PATH: /var/www/depurador
+  PM2_HOME: /home/talleruser11/.pm2
+  PM2_BIN: /home/talleruser11/.local/bin/pm2
+  FRANKENPHP: /home/talleruser11/.local/bin/frankenphp
+
+jobs:
+  desplegar:
+    name: Compilar y publicar Laravel, Inertia y Vue
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, linux, x64]
+    timeout-minutes: 30
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: Proyecto_Visual
+
+    steps:
+      - name: Comprobar la preparación de Ubuntu
+        working-directory: ${{ runner.temp }}
+        run: |
+          set -euo pipefail
+          export PATH="/home/talleruser11/.local/bin:$PATH"
+          printf '%s\n' /home/talleruser11/.local/bin >> "$GITHUB_PATH"
+          test "$(id -un)" = "talleruser11" || {
+            echo "El servicio del runner debe ejecutarse como talleruser11."
+            exit 1
+          }
+          test -r "$DEPLOY_PATH/.env" || {
+            echo "Prepara primero /var/www/depurador/.env según la guía."
+            exit 1
+          }
+          test -w "$DEPLOY_PATH"
+          test -w "$DEPLOY_PATH/storage"
+          test -w "$DEPLOY_PATH/bootstrap/cache"
+          for herramienta in php composer rsync curl; do
+            command -v "$herramienta" >/dev/null || {
+              echo "::error::Falta $herramienta en el PATH del usuario del runner."
+              exit 1
+            }
+          done
+          php -r 'if (version_compare(PHP_VERSION, "8.4.1", "<") || ! extension_loaded("pdo_pgsql")) { fwrite(STDERR, "Se requiere PHP >= 8.4.1 con pdo_pgsql.\n"); exit(1); }'
+          composer --version --no-ansi
+          test -x "$FRANKENPHP"
+          test -x "$PM2_BIN"
+          test -s "$PM2_HOME/pm2.pid" || {
+            echo "Inicia PM2 desde SSH según la guía, antes de ejecutar el workflow."
+            exit 1
+          }
+          kill -0 "$(cat "$PM2_HOME/pm2.pid")" || {
+            echo "PM2 no está activo. Restáuralo desde SSH como talleruser11."
+            exit 1
+          }
+          test -S "$PM2_HOME/rpc.sock"
+          "$FRANKENPHP" php-cli -r 'exit(version_compare(PHP_VERSION, "8.4.1", ">=") && extension_loaded("pdo_pgsql") ? 0 : 1);'
+
+      - name: Obtener el código
+        uses: actions/checkout@v6
+        with:
+          clean: true
+          persist-credentials: false
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Comprobar el proceso registrado en PM2
+        working-directory: ${{ runner.temp }}
+        run: |
+          set -euo pipefail
+          test -s "$PM2_HOME/pm2.pid"
           kill -0 "$(cat "$PM2_HOME/pm2.pid")"
           test -S "$PM2_HOME/rpc.sock"
           "$PM2_BIN" describe depurador-web >/dev/null || {
@@ -126,3 +222,7 @@
           curl --fail --silent --show-error --max-time 15 \
             -H 'Host: 146.83.198.35:1644' \
             --output /dev/null http://127.0.0.1/up
+          curl --fail --silent --show-error --max-time 15 \
+            -H 'Host: 146.83.198.35:1644' \
+            --output /dev/null http://127.0.0.1/login
+          echo "Publicación completada. Abre http://146.83.198.35:1644"
