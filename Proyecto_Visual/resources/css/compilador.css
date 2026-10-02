@@ -96,3 +96,22 @@
     background: #E0F2FE;
     pointer-events: none;
 }
+
+.compilador-app {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    min-height: 100vh;
+    background-color: #FBFBFA;
+    color: #1C1917;
+}
+
+.compilador-principal {
+    min-width: 0;
+    overflow-y: auto;
+}
+
+@media (max-width: 700px) {
+    .compilador-app {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

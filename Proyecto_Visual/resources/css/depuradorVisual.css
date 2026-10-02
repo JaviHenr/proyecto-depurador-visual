@@ -358,36 +358,6 @@
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .depurador-app .dv-lateral {
-        position: static;
-        height: auto;
-        padding: 18px 16px 12px;
-    }
-
-    .depurador-app .dv-marca {
-        padding: 0 4px;
-    }
-
-    .depurador-app .dv-menu {
-        display: flex;
-        gap: 6px;
-        margin-top: 18px;
-        overflow-x: auto;
-    }
-
-    .depurador-app .dv-menu-item {
-        flex: 0 0 auto;
-        width: auto;
-        min-height: 40px;
-        padding: 8px 12px;
-        gap: 8px;
-        font-size: 13px;
-    }
-
-    .depurador-app .dv-cuenta {
-        display: none;
-    }
-
     .depurador-app .dv-contenido {
         padding: 25px 20px 32px;
     }

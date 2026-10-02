@@ -1,25 +1,32 @@
-name: Preparar Proyecto Visual
+name: Publicar Proyecto Visual con PM2
 
-on:
+"on":
   workflow_dispatch:
-
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - "Proyecto_Visual/**"
-      - ".github/workflows/preparar-ubuntu.yml"
+      - ".github/workflows/deploy.yml"
 
 permissions:
   contents: read
 
+concurrency:
+  group: depurador-produccion
+  cancel-in-progress: false
+
+env:
+  DEPLOY_PATH: /var/www/depurador
+  PM2_HOME: /home/talleruser11/.pm2
+  PM2_BIN: /home/talleruser11/.local/bin/pm2
+  FRANKENPHP: /home/talleruser11/.local/bin/frankenphp
+
 jobs:
-  preparar-proyecto:
-    name: Instalar Laravel, Inertia y Vue
-    runs-on:
-      - self-hosted
-      - linux
-      - x64
+  desplegar:
+    name: Compilar y publicar Laravel, Inertia y Vue
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, linux, x64]
+    timeout-minutes: 30
 
     defaults:
       run:
@@ -27,56 +34,190 @@ jobs:
         working-directory: Proyecto_Visual
 
     steps:
-      - name: Clonar repositorio
+      - name: Comprobar la preparación de Ubuntu
+        working-directory: ${{ runner.temp }}
+        run: |
+          set -euo pipefail
+          export PATH="/home/talleruser11/.local/bin:$PATH"
+          printf '%s\n' /home/talleruser11/.local/bin >> "$GITHUB_PATH"
+          test "$(id -un)" = "talleruser11" || {
+            echo "El servicio del runner debe ejecutarse como talleruser11."
+            exit 1
+          }
+          test -r "$DEPLOY_PATH/.env" || {
+            echo "Prepara primero /var/www/depurador/.env según la guía."
+            exit 1
+          }
+          test -w "$DEPLOY_PATH"
+          test -w "$DEPLOY_PATH/storage"
+          test -w "$DEPLOY_PATH/bootstrap/cache"
+          for herramienta in php composer rsync curl; do
+            command -v "$herramienta" >/dev/null || {
+              echo "::error::Falta $herramienta en el PATH del usuario del runner."
+              exit 1
+            }
+          done
+          php -r 'if (version_compare(PHP_VERSION, "8.4.1", "<") || ! extension_loaded("pdo_pgsql")) { fwrite(STDERR, "Se requiere PHP >= 8.4.1 con pdo_pgsql.\n"); exit(1); }'
+          composer --version --no-ansi
+          test -x "$FRANKENPHP"
+          test -x "$PM2_BIN"
+          test -s "$PM2_HOME/pm2.pid" || {
+            echo "Inicia PM2 desde SSH según la guía, antes de ejecutar el workflow."
+            exit 1
+          }
+          kill -0 "$(cat "$PM2_HOME/pm2.pid")" || {
+            echo "PM2 no está activo. Restáuralo desde SSH como talleruser11."
+            exit 1
+          }
+          test -S "$PM2_HOME/rpc.sock"
+          "$FRANKENPHP" php-cli -r 'exit(version_compare(PHP_VERSION, "8.4.1", ">=") && extension_loaded("pdo_pgsql") ? 0 : 1);'
+
+      - name: Obtener el código
         uses: actions/checkout@v6
         with:
-          clean: false
+          clean: true
+          persist-credentials: false
 
-      - name: Mostrar ubicación del proyecto
-        run: |
-          echo "Repositorio completo: $GITHUB_WORKSPACE"
-          echo "Aplicación Laravel: $GITHUB_WORKSPACE/Proyecto_Visual"
-          pwd
-          ls -la
-
-      - name: Instalar PHP y Composer
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: "8.4"
-          extensions: mbstring, pdo_pgsql, bcmath, intl, xml
-          tools: composer:v2
-          coverage: none
-
-      - name: Instalar Node.js
+      - name: Preparar Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: Proyecto_Visual/package-lock.json
+          node-version: "24"
+          package-manager-cache: false
 
-      - name: Crear archivo de entorno
+      - name: Comprobar el proceso registrado en PM2
+        working-directory: ${{ runner.temp }}
         run: |
-          if [ ! -f .env ]; then
-            cp .env.example .env
-            echo "Se creó el archivo .env"
-          else
-            echo "El archivo .env ya existe"
+          set -euo pipefail
+          test -s "$PM2_HOME/pm2.pid"
+          kill -0 "$(cat "$PM2_HOME/pm2.pid")"
+          test -S "$PM2_HOME/rpc.sock"
+          "$PM2_BIN" describe depurador-web >/dev/null || {
+            echo "::error::Inicia depurador-web desde SSH con tu ecosystem.json antes de publicar."
+            exit 1
+          }
+
+      - name: Preparar el entorno de compilación
+        run: |
+          set -euo pipefail
+          umask 0027
+          cp "$DEPLOY_PATH/.env" .env
+          chmod 600 .env
+          mkdir -p bootstrap/cache storage/framework/cache/data
+          mkdir -p storage/framework/sessions storage/framework/views storage/logs
+          rm -f bootstrap/cache/*.php public/hot
+
+      - name: Instalar dependencias PHP de producción
+        run: |
+          set -euo pipefail
+          composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
+          composer check-platform-reqs --no-dev --no-interaction
+
+      - name: Revisar la configuración y las columnas de PostgreSQL
+        run: |
+          set -euo pipefail
+          depurador_check="$(mktemp)"
+          trap 'rm -f "$depurador_check"' EXIT
+          cat > "$depurador_check" <<'PHP'
+          <?php
+          require 'vendor/autoload.php';
+          $app = require 'bootstrap/app.php';
+          $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+
+          $expected = [
+              'app.env' => 'production',
+              'app.url' => 'http://146.83.198.35:1644',
+              'app.debug' => false,
+              'database.default' => 'pgsql',
+              'cache.default' => 'file',
+              'session.driver' => 'file',
+              'queue.default' => 'sync',
+              'inertia.ssr.enabled' => false,
+          ];
+
+          foreach ($expected as $name => $value) {
+              if (config($name) !== $value) {
+                  file_put_contents('php://stderr', "Revisa la opción {$name} según la guía.\n");
+                  exit(1);
+              }
+          }
+
+          if (! config('app.key')) {
+              file_put_contents('php://stderr', "Falta APP_KEY en el entorno de producción.\n");
+              exit(1);
+          }
+
+          $tables = [
+              'usuario' => ['id_usuario', 'nombre_usuario', 'email', 'rol', 'contrasena', 'remember_token', 'email_verified_at', 'created_at', 'updated_at'],
+              'actividad' => ['id_actividad', 'nombre_actividad', 'descripcion_actividad', 'instrucciones', 'fecha_creacion_actividad'],
+              'seccion' => ['id_seccion', 'id_usuario', 'nombre_seccion', 'descripcion_seccion'],
+              'seccion_estudiante' => ['id_seccion', 'id_usuario', 'fecha_inscripcion'],
+              'seccion_actividad' => ['id_seccion', 'id_actividad'],
+              'codigo' => ['id_codigo', 'id_actividad', 'id_usuario', 'nombre_codigo', 'nombre_archivo', 'formato', 'contenido_codigo', 'fecha_creacion_codigo'],
+          ];
+
+          foreach ($tables as $table => $columns) {
+              if (! \Illuminate\Support\Facades\Schema::hasColumns($table, $columns)) {
+                  file_put_contents('php://stderr', "Faltan la tabla o columnas esperadas en {$table}. Revisa el apartado de base de datos.\n");
+                  exit(1);
+              }
+          }
+
+          echo "Configuración y columnas comprobadas. No se modificó la base de datos.\n";
+          PHP
+          "$FRANKENPHP" php-cli "$depurador_check"
+
+      - name: Instalar dependencias del frontend y compilar
+        run: |
+          set -euo pipefail
+          npm ci --include=dev
+          npm run build
+          test -s public/build/manifest.json
+
+      - name: Publicar en el directorio servido por FrankenPHP
+        run: |
+          set -euo pipefail
+          umask 0027
+          test "$DEPLOY_PATH" = "/var/www/depurador"
+          rsync -rlt --delete \
+            --exclude='/.env*' \
+            --exclude='/.git/' \
+            --exclude='/node_modules/' \
+            --exclude='/storage/' \
+            --exclude='/bootstrap/cache/' \
+            --exclude='/bootstrap/ssr/' \
+            --exclude='/public/storage' \
+            --exclude='/public/hot' \
+            ./ "$DEPLOY_PATH/"
+
+          cd "$DEPLOY_PATH"
+          rm -f public/hot bootstrap/cache/*.php
+          "$FRANKENPHP" php-cli artisan package:discover --no-interaction
+          "$FRANKENPHP" php-cli artisan config:cache --no-interaction
+          "$FRANKENPHP" php-cli artisan view:cache --no-interaction
+          if [ ! -e public/storage ] && [ ! -L public/storage ]; then
+            "$FRANKENPHP" php-cli artisan storage:link --no-interaction
           fi
 
-      - name: Instalar dependencias Laravel
-        run: composer install --no-interaction --prefer-dist --no-progress
-
-      - name: Generar clave de Laravel
+      - name: Reiniciar el servidor registrado en PM2
+        working-directory: /var/www/depurador
         run: |
-          if ! grep -q "^APP_KEY=base64:" .env; then
-            php artisan key:generate --force
-          fi
+          set -euo pipefail
+          test -s "$PM2_HOME/pm2.pid"
+          kill -0 "$(cat "$PM2_HOME/pm2.pid")"
+          test -S "$PM2_HOME/rpc.sock"
+          "$PM2_BIN" restart depurador-web
+          curl --fail --silent --show-error \
+            --retry 10 --retry-delay 1 --retry-connrefused --max-time 5 \
+            --output /dev/null http://127.0.0.1:8000/up
 
-      - name: Instalar dependencias Vue
-        run: npm ci
-
-      - name: Compilar Vue e Inertia
-        run: npm run build
-
-      - name: Verificar instalación
-        run: php artisan about
+      - name: Comprobar la respuesta HTTP local
+        working-directory: ${{ runner.temp }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 15 \
+            -H 'Host: 146.83.198.35:1644' \
+            --output /dev/null http://127.0.0.1/up
+          curl --fail --silent --show-error --max-time 15 \
+            -H 'Host: 146.83.198.35:1644' \
+            --output /dev/null http://127.0.0.1/login
+          echo "Publicación completada. Abre http://146.83.198.35:1644"

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
 import BarraLateral from '../components/BarraLateral.vue';
+
 defineProps<{ titulo: string; descripcion?: string; activo: 'secciones' | 'codigos' }>();
 const page = usePage<{ actor: { id: number; nombre: string; rol: string }; aulaFlash?: string | null }>();
 const sesion = useForm({});
@@ -30,7 +31,6 @@ const sesion = useForm({});
 .aula-app :focus-visible { outline: 2px solid #9b79e5; outline-offset: 3px; }
 .aula-app button { cursor: pointer; }
 .aula-app button:disabled { opacity: .5; cursor: not-allowed; }
-.aula-app .avatar { display: grid; place-items: center; flex-shrink: 0; width: 35px; height: 35px; border-radius: 50%; background: #dff2ff; color: #0095e7; font-weight: 700; }
 .aula-app .aula-main { width: 100%; max-width: 1400px; min-width: 0; margin: 0 auto; padding: 30px 40px 45px; }
 .aula-app .aula-encabezado { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 28px; }
 .aula-app .aula-encabezado p { margin-top: 6px; }

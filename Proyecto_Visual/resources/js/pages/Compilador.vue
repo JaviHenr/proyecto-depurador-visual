@@ -3,8 +3,6 @@ import { Head } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import BarraLateral from '../components/BarraLateral.vue';
 
-
-
 type Valor = string | number | boolean | null;
 
 interface Variable {
@@ -76,10 +74,10 @@ function reiniciar() {
 <template>
     <Head title="Depurador Visual" />
 
-    <div class="flex min-h-screen bg-[#FAF7F2] text-[#1C1917]">
+    <div class="compilador-app">
         <BarraLateral pestana-activa="depurador" />
 
-        <div class="flex-1 min-w-0 flex flex-col">
+        <div class="compilador-principal">
             <!-- Encabezado -->
             <header class="border-b border-[#E7E5E4] bg-white">
                 <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-5 sm:px-6">
@@ -91,7 +89,7 @@ function reiniciar() {
                 </div>
             </header>
 
-            <main class="mx-auto w-full max-w-7xl space-y-4 px-4 py-6 sm:px-6">
+            <main class="mx-auto max-w-7xl space-y-4 px-4 py-6 sm:px-6">
                 <!-- Controles: funciones pendientes de implementar -->
                 <section aria-label="Controles de ejecución" class="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-[#E7E5E4] bg-white p-3">
                     <div class="flex flex-wrap gap-2">
