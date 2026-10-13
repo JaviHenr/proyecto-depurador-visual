@@ -66,6 +66,7 @@ const logout = () => {
     <aside class="barra-lateral" aria-label="Navegación lateral">
         <div class="marca">
             <Link href="/dashboard" class="texto-marca">
+                <img src="/logo.png" alt="Depurador Visual Logo" class="logo-marca" />
                 <span class="titulo-marca">Depurador Visual</span>
             </Link>
         </div>

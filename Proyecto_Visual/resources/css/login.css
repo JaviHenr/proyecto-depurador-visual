@@ -31,6 +31,15 @@
     margin-bottom: 28px;
 }
 
+.brand-logo {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    margin: 0 auto 12px;
+    display: block;
+    user-select: none;
+}
+
 .brand-title {
     font-size: 1.8rem;
     font-weight: 800;

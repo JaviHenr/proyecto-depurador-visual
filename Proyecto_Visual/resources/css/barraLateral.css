@@ -31,7 +31,16 @@
 .barra-lateral .texto-marca {
     display: flex;
     align-items: center;
+    gap: 10px;
     text-decoration: none;
+}
+
+.barra-lateral .logo-marca {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    flex-shrink: 0;
+    user-select: none;
 }
 
 .barra-lateral .titulo-marca {

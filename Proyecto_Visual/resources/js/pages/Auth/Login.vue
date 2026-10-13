@@ -25,6 +25,7 @@ const submit = () => {
     <div class="layout-login">
         <!-- Encabezado de Marca (igual a Dashboard) -->
         <div class="brand-header">
+            <img src="/logo.png" alt="Depurador Visual Logo" class="brand-logo" />
             <h1 class="brand-title">Depurador<span class="brand-accent">Visual</span></h1>
             <p class="brand-subtitle">Comprensión de estructuras iterativas</p>
         </div>
