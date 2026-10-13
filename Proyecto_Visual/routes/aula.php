@@ -29,3 +29,6 @@ Route::middleware('auth')->name('aula.')->group(function () {
     Route::put('/codigos/{codigo}', [CodigoController::class, 'update'])->whereNumber('codigo')->name('codigos.update');
     Route::delete('/codigos/{codigo}', [CodigoController::class, 'destroy'])->whereNumber('codigo')->name('codigos.destroy');
 });
+
+// Lectura de archivos JSON externos del motor.
+require __DIR__.'/trazas.php';

@@ -3,10 +3,12 @@
  * Cada paso contiene una copia independiente de la memoria DESPUÉS de la línea.
  * El motor real podrá entregar este mismo contrato junto a su código fuente.
  */
-export type ValorMemoria = number | number[];
+export type EscalarMemoria = number | string | boolean | null;
+export type ValorMemoria = EscalarMemoria | EscalarMemoria[];
 export type Memoria = Record<string, ValorMemoria>;
 
 export interface PasoTraza {
+    numeroPaso?: number;
     linea: number; // Numeración del código desde 1.
     titulo: string;
     explicacion: string; // Mostrar solo después de confirmar el paso.
@@ -15,6 +17,9 @@ export interface PasoTraza {
     reto?: { variable: string; pista: string };
     ciclo?: { tipo: 'while' | 'for'; iteracion: number; condicion: string; resultado: boolean };
     acceso?: { arreglo: string; indice: number };
+    condicion?: { expresion: string; resultado: boolean; dependeDe: string[] };
+    iteracion?: number | null;
+    ambito?: string;
 }
 
 export interface EjemploDepuracion {

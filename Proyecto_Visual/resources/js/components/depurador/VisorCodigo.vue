@@ -1,26 +1,26 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 
-const props = defineProps<{ codigo: string; archivo: string; linea: number | null; esperando: boolean }>();
+const props = defineProps<{ codigo: string; archivo: string; linea: number | null; esperando: boolean; titulo?: string }>();
 const contenedor = ref<HTMLElement | null>(null);
 
 // Resaltado visual sencillo; no es un parser ni modifica el programa.
 function tokens(texto: string) {
-    const patron = /("(?:\\.|[^"\\])*"|\/\/.*$|\b(?:public|class|static|void|int|for|while|boolean|String)\b|\b\d+\b)/g;
+    const patron = /("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\/\/.*$|#.*$|\b(?:public|class|static|void|int|for|while|boolean|String|if|else|elif|def|return|in|range|True|False|None)\b|\b\d+(?:\.\d+)?\b)/g;
     const partes: { texto: string; clase: string }[] = [];
     let anterior = 0;
     for (const coincidencia of texto.matchAll(patron)) {
         const posicion = coincidencia.index ?? 0;
         if (posicion > anterior) partes.push({ texto: texto.slice(anterior, posicion), clase: '' });
         const valor = coincidencia[0];
-        partes.push({ texto: valor, clase: valor.startsWith('//') ? 'comentario' : valor.startsWith('"') ? 'cadena' : /^\d/.test(valor) ? 'numero' : 'palabra' });
+        partes.push({ texto: valor, clase: valor.startsWith('//') || valor.startsWith('#') ? 'comentario' : valor.startsWith('"') || valor.startsWith("'") ? 'cadena' : /^\d/.test(valor) ? 'numero' : 'palabra' });
         anterior = posicion + valor.length;
     }
     partes.push({ texto: texto.slice(anterior) || (texto.length ? '' : ' '), clase: '' });
     return partes;
 }
 
-const lineas = computed(() => props.codigo.split('\n').map(tokens));
+const lineas = computed(() => props.codigo.replace(/\r\n?/g, '\n').split('\n').map(tokens));
 
 watch(() => [props.linea, props.codigo], () => {
     const visor = contenedor.value;
@@ -36,10 +36,10 @@ watch(() => [props.linea, props.codigo], () => {
 <template>
     <section class="dv-panel visor" aria-labelledby="titulo-codigo">
         <header class="dv-panel-cabecera">
-            <h2 id="titulo-codigo">Código fuente</h2>
+            <h2 id="titulo-codigo">{{ titulo || 'Código fuente' }}</h2>
             <span class="dv-etiqueta">{{ archivo }}</span>
         </header>
-        <div ref="contenedor" class="codigo" role="region" aria-label="Código Java del ejemplo, solo lectura" tabindex="0">
+        <div ref="contenedor" class="codigo" role="region" :aria-label="`${titulo || 'Código fuente'}, solo lectura`" tabindex="0">
             <div v-for="(partes, i) in lineas" :key="i" class="linea" :class="{ activa: linea === i + 1, pendiente: esperando && linea === i + 1 }" :data-linea="i + 1" :aria-current="linea === i + 1 ? 'step' : undefined">
                 <span class="numero-linea" aria-hidden="true">{{ i + 1 }}</span>
                 <code><span v-for="(parte, j) in partes" :key="j" :class="parte.clase">{{ parte.texto }}</span></code>

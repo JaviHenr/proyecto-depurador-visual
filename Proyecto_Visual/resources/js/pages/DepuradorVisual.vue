@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, onScopeDispose, ref, watch } from 'vue';
 import BarraLateral from '../components/BarraLateral.vue';
 import ControlesEjecucion from '../components/depurador/ControlesEjecucion.vue';
 import VisorCodigo from '../components/depurador/VisorCodigo.vue';
 import PanelMemoria from '../components/depurador/PanelMemoria.vue';
 import { ejemplosDepuracion, type EjemploDepuracion } from '../lib/ejemplosDepuracion';
 import { useDepurador } from '../composables/useDepurador';
+import { convertirTraza, fuenteDesdeJSON, normalizarFuente } from '../lib/trazaSemantica';
 
 interface CodigoCargado {
     id_codigo: number;
@@ -48,6 +49,31 @@ const form = useForm({
     huella: props.codigo?.huella ?? '',
 });
 
+
+// Archivos del motor: se leen directamente, sin script, metadatos añadidos ni base de datos.
+interface ArchivoJSON { nombre: string; ruta: string; origen: 'general' | 'codigo' }
+const archivosJSON = ref<ArchivoJSON[]>([]);
+const archivoJSON = ref('');
+const trazaJSON = ref<EjemploDepuracion | null>(null);
+const jsonActivo = ref(false);
+const cargandoJSON = ref(false);
+const errorJSON = ref('');
+const instruccionesJSON = ref(false);
+const fuenteAlCargar = ref('');
+const formatoAlCargar = ref('');
+let solicitudJSON: AbortController | null = null;
+let turnoJSON = 0;
+let seleccionDesdeLista = false;
+const usaJSON = computed(() => props.codigo ? jsonActivo.value : ejemploId.value === 'json-externo');
+const fuenteSinGuardar = computed(() => !!props.codigo && (
+    normalizarFuente(form.contenido_codigo) !== normalizarFuente(props.codigo.contenido_codigo)
+    || form.formato.trim().toLowerCase() !== props.codigo.formato.trim().toLowerCase()
+));
+const jsonCompatible = computed(() => !!trazaJSON.value && (!props.codigo || (
+    !fuenteSinGuardar.value && normalizarFuente(form.contenido_codigo) === fuenteAlCargar.value
+    && form.formato.trim().toLowerCase() === formatoAlCargar.value
+)));
+
 function normalizarCodigo(codigo: string) {
     return codigo.replace(/\s+/g, '');
 }
@@ -61,23 +87,28 @@ const ejemploCompatible = computed(() => {
 const codigoGuardado = computed<EjemploDepuracion>(() => ({
     id: `codigo-${props.codigo?.id_codigo ?? 'nuevo'}`,
     titulo: form.nombre_codigo || 'Código guardado',
-    descripcion: ejemploCompatible.value
+    descripcion: usaJSON.value
+        ? 'Recorre las instrucciones y valores entregados por el archivo JSON seleccionado.'
+        : ejemploCompatible.value
         ? 'Este programa coincide con una traza local disponible. Puedes recorrerla paso a paso.'
         : 'Puedes editar y guardar el programa. Para generar sus pasos automáticamente falta conectar el motor de ejecución.',
     archivo: form.nombre_archivo || 'Código fuente',
     codigo: form.contenido_codigo,
-    pasos: ejemploCompatible.value?.pasos ?? [],
+    pasos: usaJSON.value ? (jsonCompatible.value ? trazaJSON.value!.pasos : []) : ejemploCompatible.value?.pasos ?? [],
 }));
 
 const ejemplo = computed<EjemploDepuracion>(() => props.codigo
     ? codigoGuardado.value
-    : (ejemplosDepuracion.find(item => item.id === ejemploId.value) ?? ejemplosDepuracion[0]));
+    : ejemploId.value === 'json-externo'
+        ? trazaJSON.value ?? { id: 'json-externo', titulo: 'JSON del motor', descripcion: 'Selecciona un archivo JSON externo para recorrer sus instrucciones.', archivo: archivoJSON.value || 'JSON del motor', codigo: '', pasos: [] }
+        : (ejemplosDepuracion.find(item => item.id === ejemploId.value) ?? ejemplosDepuracion[0]));
 const {
     indice, confirmado, reproduciendo, modo, intervalo, respuesta, feedback,
     paso, anterior, memoria, salida, esperando, terminado, estado,
     puedeIniciar, puedeAvanzar, iniciar, pausar, avanzar, retroceder, reiniciar, confirmar,
 } = useDepurador(ejemplo);
 const ejecutados = computed(() => Math.max(0, indice.value + (confirmado.value ? 1 : 0)));
+const estadoVisible = computed(() => !usaJSON.value ? estado.value : cargandoJSON.value ? 'Cargando JSON…' : fuenteSinGuardar.value ? 'Guarda el código y carga su nueva traza' : jsonCompatible.value ? estado.value : 'Selecciona y carga un JSON');
 
 function guardarCodigo() {
     if (!props.codigo || !props.permisosCodigo.editar || form.processing) return;
@@ -98,6 +129,113 @@ function guardarCodigo() {
         },
     });
 }
+
+
+function parametrosJSON(): URLSearchParams {
+    const parametros = new URLSearchParams();
+    if (props.codigo) parametros.set('codigo', String(props.codigo.id_codigo));
+    return parametros;
+}
+async function obtenerJSON(url: string, control: AbortController): Promise<Record<string, unknown>> {
+    const respuesta = await fetch(url, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin', cache: 'no-store', signal: control.signal });
+    const datos = await respuesta.json().catch(() => { throw new Error('No se recibió JSON. Revisa la ruta y tu sesión.'); });
+    if (!respuesta.ok) {
+        const errorArchivo = datos.errors?.archivo?.[0];
+        throw new Error(errorArchivo || datos.message || 'No se pudo leer el archivo JSON.');
+    }
+    return datos;
+}
+async function actualizarArchivos(automatico = false) {
+    const turno = ++turnoJSON;
+    solicitudJSON?.abort();
+    const control = new AbortController();
+    solicitudJSON = control;
+    cargandoJSON.value = true;
+    errorJSON.value = '';
+    let cargarAutomaticamente = false;
+    try {
+        const datos = await obtenerJSON(`/depurador/trazas/archivos?${parametrosJSON()}`, control);
+        if (turno !== turnoJSON) return;
+        const lista = datos.archivos;
+        if (!Array.isArray(lista)) throw new Error('La lista de archivos no tiene el formato esperado.');
+        archivosJSON.value = lista as ArchivoJSON[];
+        if (!archivosJSON.value.some(item => item.ruta === archivoJSON.value)) {
+            const nombreFuente = props.codigo?.nombre_archivo.replace(/\.[^.]+$/, '');
+            const privado = archivosJSON.value.find(item => item.origen === 'codigo');
+            const porNombre = nombreFuente ? archivosJSON.value.find(item => item.nombre === `traza_${nombreFuente}.json`) : undefined;
+            const inicial = archivosJSON.value.find(item => item.nombre === datos.archivo_inicial);
+            seleccionDesdeLista = true;
+            archivoJSON.value = (privado ?? porNombre ?? inicial ?? archivosJSON.value[0])?.ruta ?? '';
+            seleccionDesdeLista = false;
+            cargarAutomaticamente = automatico && !!archivoJSON.value && (!props.codigo || !!privado || !!porNombre);
+        }
+    } catch (error) {
+        if (!control.signal.aborted && turno === turnoJSON) errorJSON.value = error instanceof Error ? error.message : 'No se pudo listar la carpeta de JSON.';
+    } finally {
+        if (turno === turnoJSON) cargandoJSON.value = false;
+    }
+    if (cargarAutomaticamente && turno === turnoJSON) await cargarJSON();
+}
+async function cargarJSON() {
+    if (!archivoJSON.value || fuenteSinGuardar.value) return;
+    const turno = ++turnoJSON;
+    solicitudJSON?.abort();
+    const control = new AbortController();
+    solicitudJSON = control;
+    pausar();
+    jsonActivo.value = true;
+    if (!props.codigo) ejemploId.value = 'json-externo';
+    trazaJSON.value = null;
+    errorJSON.value = '';
+    cargandoJSON.value = true;
+    const fuente = props.codigo ? normalizarFuente(form.contenido_codigo) : '';
+    const formato = form.formato.trim().toLowerCase();
+    const id = props.codigo?.id_codigo;
+    const archivo = archivoJSON.value;
+    try {
+        const parametros = parametrosJSON();
+        parametros.set('archivo', archivo);
+        const datos = await obtenerJSON(`/depurador/trazas/archivo?${parametros}`, control);
+        if (turno !== turnoJSON || archivo !== archivoJSON.value || id !== props.codigo?.id_codigo) return;
+        if (props.codigo && (fuente !== normalizarFuente(form.contenido_codigo) || formato !== form.formato.trim().toLowerCase())) return;
+        const vista = props.codigo ? { codigo: fuente, esEjemplo: true } : fuenteDesdeJSON(datos.traza);
+        const convertido = convertirTraza(datos.traza, vista.codigo, props.codigo ? form.nombre_archivo : archivo.split('/').pop()!, props.codigo ? form.nombre_codigo : archivo.split('/').pop()!);
+        fuenteAlCargar.value = fuente;
+        formatoAlCargar.value = formato;
+        instruccionesJSON.value = !props.codigo && !vista.esEjemplo;
+        trazaJSON.value = convertido;
+    } catch (error) {
+        if (!control.signal.aborted && turno === turnoJSON) errorJSON.value = error instanceof Error ? error.message : 'No se pudo cargar la traza JSON.';
+    } finally {
+        if (turno === turnoJSON) cargandoJSON.value = false;
+    }
+}
+watch(archivoJSON, () => {
+    if (!seleccionDesdeLista) {
+        ++turnoJSON;
+        solicitudJSON?.abort();
+        cargandoJSON.value = false;
+    }
+    trazaJSON.value = null;
+    errorJSON.value = '';
+    if (usaJSON.value) reiniciar();
+}, { flush: 'sync' });
+watch(() => props.codigo?.id_codigo, () => {
+    trazaJSON.value = null;
+    jsonActivo.value = false;
+    archivoJSON.value = '';
+    if (props.codigo) {
+        form.nombre_codigo = props.codigo.nombre_codigo;
+        form.nombre_archivo = props.codigo.nombre_archivo;
+        form.formato = props.codigo.formato;
+        form.contenido_codigo = props.codigo.contenido_codigo;
+        form.id_actividad = props.codigo.id_actividad;
+        form.huella = props.codigo.huella;
+        form.defaults();
+    }
+    void actualizarArchivos(true);
+}, { immediate: true });
+onScopeDispose(() => { ++turnoJSON; solicitudJSON?.abort(); });
 
 function cerrarSesion() {
     if (cerrandoSesion.value) return;
@@ -129,10 +267,11 @@ function cerrarSesion() {
                 <div class="dv-ejercicio">
                     <label :for="codigo ? undefined : 'ejemplo-depuracion'">
                         {{ codigo ? 'Código cargado' : 'Ejercicio de ejemplo' }}
-                        <span class="dv-etiqueta">{{ codigo ? form.formato : 'Java' }}</span>
+                        <span class="dv-etiqueta">{{ codigo ? form.formato : usaJSON ? 'JSON del motor' : 'Java' }}</span>
                     </label>
                     <strong v-if="codigo" class="dv-nombre-codigo">{{ form.nombre_archivo }}</strong>
                     <select v-else id="ejemplo-depuracion" v-model="ejemploId">
+                        <option value="json-externo">{{ archivoJSON ? `JSON · ${archivoJSON.split('/').pop()}` : 'JSON del motor' }}</option>
                         <option v-for="item in ejemplosDepuracion" :key="item.id" :value="item.id">{{ item.titulo }}</option>
                     </select>
                     <p>{{ ejemplo.descripcion }}</p>
@@ -148,6 +287,28 @@ function cerrarSesion() {
                     <p>{{ modo === 'predecir' ? 'Completa los valores para continuar.' : 'Sigue la ejecución automática o paso a paso.' }}</p>
                 </fieldset>
             </div>
+
+
+            <section class="dv-seleccion" aria-label="JSON del motor">
+                <div class="dv-ejercicio">
+                    <label for="archivo-traza-json">JSON del motor</label>
+                    <select id="archivo-traza-json" v-model="archivoJSON" :disabled="cargandoJSON || !archivosJSON.length">
+                        <option value="" disabled>Selecciona un archivo JSON</option>
+                        <option v-for="archivo in archivosJSON" :key="archivo.ruta" :value="archivo.ruta">{{ archivo.nombre }}{{ archivo.origen === 'codigo' ? ' · Este código' : '' }}</option>
+                    </select>
+                    <p v-if="cargandoJSON" role="status">Leyendo la carpeta externa…</p>
+                    <p v-else-if="usaJSON && jsonCompatible" role="status">{{ ejemplo.pasos.length }} pasos cargados de {{ archivoJSON.split('/').pop() }}.</p>
+                    <p v-else-if="usaJSON && fuenteSinGuardar" role="status">Guarda los cambios y carga el JSON que el motor genere para el código actualizado.</p>
+                    <p v-else>{{ codigo ? 'Elige el JSON que el motor generó para este código.' : 'Selecciona un JSON y carga las instrucciones que entregó el motor.' }}</p>
+                    <p v-if="errorJSON" class="dv-aviso error" role="alert">{{ errorJSON }}</p>
+                    <p v-if="usaJSON && instruccionesJSON">Esta vista muestra las instrucciones del JSON por línea.</p>
+                    <div class="dv-editor-pie">
+                        <button type="button" class="dv-boton dv-primario" :disabled="cargandoJSON || !archivoJSON || fuenteSinGuardar" @click="cargarJSON">Cargar JSON</button>
+                        <button type="button" class="dv-boton" :disabled="cargandoJSON" @click="actualizarArchivos()">Actualizar lista</button>
+                        <button v-if="codigo && ejemploCompatible && jsonActivo" type="button" class="dv-boton" @click="jsonActivo = false; reiniciar()">Usar ejemplo local</button>
+                    </div>
+                </div>
+            </section>
 
             <form v-if="codigo && permisosCodigo.editar" class="dv-panel dv-editor" @submit.prevent="guardarCodigo">
                 <header class="dv-panel-cabecera">
@@ -185,13 +346,13 @@ function cerrarSesion() {
                 Estás viendo el código de {{ autorCodigo?.nombre || 'un estudiante' }} en modo de solo lectura. Solo su autor puede modificarlo o eliminarlo.
             </div>
 
-            <div v-if="codigo && !ejemploCompatible" class="dv-aviso informacion" role="status">
-                La edición y el guardado ya funcionan. Los controles de ejecución permanecerán desactivados para este programa hasta que el motor genere su traza paso a paso. Puedes seguir usando los ejemplos desde <Link href="/depurador">Depuración visual</Link>.
+            <div v-if="codigo && !ejemploCompatible && !usaJSON" class="dv-aviso informacion" role="status">
+                La edición y el guardado ya funcionan. Selecciona el JSON correspondiente en «JSON del motor» para activar el recorrido paso a paso. Puedes seguir usando los ejemplos desde <Link href="/depurador">Depuración visual</Link>.
             </div>
 
             <ControlesEjecucion
                 v-model:intervalo="intervalo"
-                :estado="estado" :indice="indice" :total="ejemplo.pasos.length" :ejecutados="ejecutados"
+                :estado="estadoVisible" :indice="indice" :total="ejemplo.pasos.length" :ejecutados="ejecutados"
                 :reproduciendo="reproduciendo" :esperando="esperando"
                 :puede-iniciar="puedeIniciar" :puede-avanzar="puedeAvanzar"
                 @iniciar="iniciar" @pausar="pausar" @retroceder="retroceder" @avanzar="avanzar" @reiniciar="reiniciar"
@@ -199,11 +360,11 @@ function cerrarSesion() {
 
             <div class="dv-columnas">
                 <div class="dv-columna-codigo">
-                    <VisorCodigo :codigo="ejemplo.codigo" :archivo="ejemplo.archivo" :linea="paso?.linea ?? null" :esperando="esperando" />
+                    <VisorCodigo :titulo="usaJSON && instruccionesJSON ? 'Instrucciones del JSON' : 'Código fuente'" :codigo="ejemplo.codigo" :archivo="ejemplo.archivo" :linea="paso?.linea ?? null" :esperando="esperando" />
                     <section class="dv-panel dv-consola" aria-labelledby="titulo-consola">
                         <header class="dv-panel-cabecera"><h2 id="titulo-consola">Consola de salida</h2><span v-if="terminado" class="dv-completado">Finalizado</span></header>
                         <pre v-if="salida.length" aria-live="polite">{{ salida.join('\n') }}</pre>
-                        <p v-else>El resultado aparecerá al ejecutar <code>System.out.println</code>.</p>
+                        <p v-else>{{ terminado ? 'El programa finalizó sin instrucciones de salida.' : 'Aquí aparecerán las salidas incluidas en la traza.' }}</p>
                     </section>
                 </div>
                 <PanelMemoria
@@ -214,11 +375,10 @@ function cerrarSesion() {
                 />
             </div>
 
-            <p class="dv-nota">{{ codigo ? 'El código se guarda en la base de datos. La traza local solo está disponible para los programas de ejemplo compatibles.' : 'Ejemplos de práctica con ejecución local. Puedes reiniciarlos las veces que necesites; tus respuestas no se guardan.' }}</p>
+            <p class="dv-nota">{{ usaJSON ? 'El recorrido sigue las instrucciones del JSON seleccionado. El archivo se lee desde la carpeta externa y tus predicciones no se guardan.' : codigo ? 'El código se guarda en la base de datos. Puedes cargar su JSON desde el selector o recorrer un ejemplo local compatible.' : 'Ejemplos de práctica con ejecución local. Puedes reiniciarlos las veces que necesites; tus respuestas no se guardan.' }}</p>
         </main>
     </div>
 </template>
-<<<<<<< HEAD
 
 <style>
 /* Todas las reglas están limitadas a esta página; no cambian las otras vistas. */
@@ -306,7 +466,3 @@ function cerrarSesion() {
     .depurador-app .dv-contenido { padding-right: 16px; padding-left: 16px; }
 }
 </style>
-<<<<<<< HEAD
-=======
->>>>>>> Stashed changes
->>>>>>> origin/feature/login-page

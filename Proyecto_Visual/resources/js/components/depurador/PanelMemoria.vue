@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
-import type { Memoria, PasoTraza } from '../../lib/ejemplosDepuracion';
+import type { Memoria, PasoTraza, EscalarMemoria, ValorMemoria } from '../../lib/ejemplosDepuracion';
+import { mostrarValor, valoresIguales } from '../../lib/trazaSemantica';
 
 const props = defineProps<{
     paso: PasoTraza | null;
@@ -21,9 +22,10 @@ const escalares = computed(() => {
     if (pendiente && !nombres.includes(pendiente)) nombres.push(pendiente);
     return nombres;
 });
-const arreglos = computed(() => Object.entries(props.memoria).filter((entrada): entrada is [string, number[]] => Array.isArray(entrada[1])));
-const valorAnterior = (nombre: string) => Object.hasOwn(props.anterior, nombre) ? String(props.anterior[nombre]) : 'sin declarar';
-const cambio = (nombre: string) => props.confirmado && props.memoria[nombre] !== props.anterior[nombre];
+const arreglos = computed(() => Object.entries(props.memoria).filter((entrada): entrada is [string, EscalarMemoria[]] => Array.isArray(entrada[1])));
+const valorAnterior = (nombre: string) => Object.hasOwn(props.anterior, nombre) ? mostrarValor(props.anterior[nombre]) : 'sin declarar';
+const cambio = (nombre: string) => props.confirmado && !valoresIguales(props.memoria[nombre], props.anterior[nombre]);
+const tipoValor = (valor: ValorMemoria) => valor === null ? 'null' : typeof valor === 'number' ? (Number.isInteger(valor) ? 'entero' : 'decimal') : typeof valor === 'boolean' ? 'booleano' : 'texto';
 
 watch(() => [props.indice, props.esperando], async () => {
     if (!props.esperando) return;
@@ -58,14 +60,14 @@ watch(() => [props.indice, props.esperando], async () => {
                 <div class="variables">
                     <div v-for="nombre in escalares" :key="nombre" class="variable" :class="{ cambio: cambio(nombre), pregunta: esperando && paso.reto?.variable === nombre }">
                         <label v-if="esperando && paso.reto?.variable === nombre" :for="`valor-${nombre}`"><code>{{ nombre }}</code> <span>=</span></label>
-                        <div v-else class="nombre-variable"><code>{{ nombre }}</code><span class="tipo">int</span></div>
+                        <div v-else class="nombre-variable"><code>{{ nombre }}</code><span class="tipo">{{ tipoValor(memoria[nombre]) }}</span></div>
 
                         <template v-if="esperando && paso.reto?.variable === nombre">
-                            <input :id="`valor-${nombre}`" :ref="guardarCampo" :value="respuesta" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="?" :aria-invalid="feedback?.tipo === 'error'" :aria-describedby="feedback?.tipo === 'error' ? 'pista-paso feedback-paso' : 'pista-paso'" @input="$emit('update:respuesta', ($event.target as HTMLInputElement).value)" />
+                            <input :id="`valor-${nombre}`" :ref="guardarCampo" :value="respuesta" type="text" :inputmode="typeof paso.memoria[nombre] === 'number' ? 'decimal' : 'text'" autocomplete="off" spellcheck="false" placeholder="?" :aria-invalid="feedback?.tipo === 'error'" :aria-describedby="feedback?.tipo === 'error' ? 'pista-paso feedback-paso' : 'pista-paso'" @input="$emit('update:respuesta', ($event.target as HTMLInputElement).value)" />
                             <p class="anterior">Paso previo: {{ nombre }} = {{ valorAnterior(nombre) }}</p>
                         </template>
                         <template v-else>
-                            <strong class="valor">{{ memoria[nombre] }}</strong>
+                            <strong class="valor">{{ mostrarValor(memoria[nombre]) }}</strong>
                             <span v-if="cambio(nombre)" class="anterior">Antes: {{ valorAnterior(nombre) }}</span>
                         </template>
                     </div>
@@ -79,10 +81,10 @@ watch(() => [props.indice, props.esperando], async () => {
             </form>
 
             <section v-for="[nombre, valores] in arreglos" :key="nombre" class="arreglo" :aria-label="`Arreglo ${nombre}`">
-                <div class="nombre-arreglo"><code>{{ nombre }}</code><span class="tipo">int[{{ valores.length }}]</span></div>
+                <div class="nombre-arreglo"><code>{{ nombre }}</code><span class="tipo">arreglo[{{ valores.length }}]</span></div>
                 <div class="celdas">
                     <div v-for="(valor, i) in valores" :key="i" class="celda" :class="{ actual: paso.acceso?.arreglo === nombre && paso.acceso.indice === i }">
-                        <strong>{{ valor }}</strong><span>[{{ i }}]</span>
+                        <strong>{{ mostrarValor(valor) }}</strong><span>[{{ i }}]</span>
                     </div>
                 </div>
                 <p v-if="paso.acceso?.arreglo === nombre" class="pista">Elemento consultado: {{ nombre }}[{{ paso.acceso.indice }}]</p>
@@ -92,6 +94,14 @@ watch(() => [props.indice, props.esperando], async () => {
                 <span>Ciclo <code>{{ paso.ciclo.tipo }}</code> · Iteración {{ paso.ciclo.iteracion }}</span>
                 <div><span>Última condición</span><code>{{ paso.ciclo.condicion }}</code><strong :class="{ falsa: !paso.ciclo.resultado }">{{ paso.ciclo.resultado ? 'Verdadera' : 'Falsa' }}</strong></div>
             </div>
+            <div v-if="paso.condicion && !esperando" class="ciclo">
+                <span>Evaluación de la condición</span>
+                <div><code>{{ paso.condicion.expresion }}</code><strong :class="{ falsa: !paso.condicion.resultado }">{{ paso.condicion.resultado ? 'Verdadera' : 'Falsa' }}</strong></div>
+                <p v-if="paso.condicion.dependeDe.length" class="pista">{{ paso.condicion.dependeDe.map(nombre => `${nombre} = ${mostrarValor(memoria[nombre])}`).join(' · ') }}</p>
+            </div>
+            <p v-if="paso.iteracion != null || paso.ambito" class="pista">
+                <span v-if="paso.iteracion != null">Iteración {{ paso.iteracion }}</span><span v-if="paso.iteracion != null && paso.ambito"> · </span><span v-if="paso.ambito">{{ paso.ambito }}</span>
+            </p>
         </div>
     </section>
 </template>

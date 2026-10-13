@@ -1,5 +1,6 @@
 import { computed, onScopeDispose, ref, watch, type Ref } from 'vue';
 import type { EjemploDepuracion, Memoria } from '../lib/ejemplosDepuracion';
+import { valoresIguales } from '../lib/trazaSemantica';
 
 export function useDepurador(ejemplo: Ref<EjemploDepuracion>) {
     const indice = ref(-1);
@@ -85,13 +86,29 @@ export function useDepurador(ejemplo: Ref<EjemploDepuracion>) {
     function confirmar() {
         if (!esperando.value || !paso.value?.reto) return;
         const texto = respuesta.value.trim();
-        const valor = Number(texto);
-        // No aceptar vacío, decimales, texto ni conversiones parciales como "1abc".
-        if (!/^[+-]?\d+$/.test(texto) || !Number.isSafeInteger(valor)) {
-            feedback.value = { tipo: 'error', texto: 'Escribe un número entero para confirmar el paso.' };
+        const esperado = paso.value.memoria[paso.value.reto.variable];
+        let valor: unknown;
+        try {
+            if (typeof esperado === 'number') {
+                if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(texto)) throw new Error();
+                valor = Number(texto);
+                if (!Number.isFinite(valor) || (Number.isInteger(esperado) && !Number.isSafeInteger(valor))) throw new Error();
+            } else if (typeof esperado === 'boolean') {
+                const booleanos: Record<string, boolean> = { true: true, false: false, verdadero: true, falso: false };
+                if (!Object.hasOwn(booleanos, texto.toLowerCase())) throw new Error();
+                valor = booleanos[texto.toLowerCase()];
+            } else if (esperado === null) {
+                if (!['null', 'none'].includes(texto.toLowerCase())) throw new Error();
+                valor = null;
+            } else {
+                if (!texto) throw new Error();
+                valor = texto.startsWith('"') ? JSON.parse(texto) : texto;
+            }
+        } catch {
+            feedback.value = { tipo: 'error', texto: typeof esperado === 'number' ? 'Escribe un número válido para confirmar el paso.' : 'Escribe un valor válido: texto, true/false o null, según la variable.' };
             return;
         }
-        if (valor !== paso.value.memoria[paso.value.reto.variable]) {
+        if (!valoresIguales(valor, esperado)) {
             feedback.value = { tipo: 'error', texto: 'Todavía no coincide. Revisa el valor anterior y la operación resaltada.' };
             return;
         }
