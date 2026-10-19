@@ -1,0 +1,225 @@
+{
+  "@context": "https://example.org/ontologia.jsonld",
+  "@graph": [
+    {
+      "@type": "PasoDeEjecucion",
+      "numeroPaso": 1,
+      "linea": 1,
+      "iteracion": null,
+      "instruccion": "numero = 5",
+      "modifica": {
+        "@type": "EstadoDeMemoria",
+        "variable": "numero",
+        "ambito": "global",
+        "valorAnterior": null,
+        "valorNuevo": 5
+      }
+    },
+    {
+      "@type": "PasoDeEjecucion",
+      "numeroPaso": 2,
+      "linea": 2,
+      "iteracion": null,
+      "instruccion": "factorial = 1",
+      "modifica": {
+        "@type": "EstadoDeMemoria",
+        "variable": "factorial",
+        "ambito": "global",
+        "valorAnterior": null,
+        "valorNuevo": 1
+      }
+    },
+    {
+      "@type": "PasoDeEjecucion",
+      "numeroPaso": 3,
+      "linea": 3,
+      "iteracion": null,
+      "instruccion": "evaluar numero > 1",
+      "evalua": {
+        "@type": "Condicion",
+        "@id": "condicion_linea3",
+        "expresion": "numero > 1",
+        "dependeDe": [
+          "numero"
+        ],
+        "resultado": true
+      }
+    },
+    {
+      "@type": "PasoDeEjecucion",
+      "numeroPaso": 4,
+      "linea": 4,
+      "iteracion": 1,
+      "instruccion": "factorial *= numero",
+      "modifica": {
+        "@type": "EstadoDeMemoria",
+        "variable": "factorial",
+        "ambito": "cuerpo_while_linea3",
+        "valorAnterior": 1,
+        "valorNuevo": 5
+      }
+    },
+    {
+      "@type": "PasoDeEjecucion",
+      "numeroPaso": 5,
+      "linea": 5,
+      "iteracion": 1,
+      "instruccion": "numero -= 1",
+      "modifica": {
+        "@type": "EstadoDeMemoria",
+        "variable": "numero",
+        "ambito": "cuerpo_while_linea3",
+        "valorAnterior": 5,
+        "valorNuevo": 4
+      }
+    },
+    {
+      "@type": "PasoDeEjecucion",
+      "numeroPaso": 6,
+      "linea": 3,
+      "iteracion": 1,
+      "instruccion": "evaluar numero > 1",
+      "evalua": {
+        "@type": "Condicion",
+        "@id": "condicion_linea3",
+        "expresion": "numero > 1",
+        "dependeDe": [
+          "numero"
+        ],
+        "resultado": true
+      }
+    },
+    {
+      "@type": "PasoDeEjecucion",
+      "numeroPaso": 7,
+      "linea": 4,
+      "iteracion": 2,
+      "instruccion": "factorial *= numero",
+      "modifica": {
+        "@type": "EstadoDeMemoria",
+        "variable": "factorial",
+        "ambito": "cuerpo_while_linea3",
+        "valorAnterior": 5,
+        "valorNuevo": 20
+      }
+    },
+    {
+      "@type": "PasoDeEjecucion",
+      "numeroPaso": 8,
+      "linea": 5,
+      "iteracion": 2,
+      "instruccion": "numero -= 1",
+      "modifica": {
+        "@type": "EstadoDeMemoria",
+        "variable": "numero",
+        "ambito": "cuerpo_while_linea3",
+        "valorAnterior": 4,
+        "valorNuevo": 3
+      }
+    },
+    {
+      "@type": "PasoDeEjecucion",
+      "numeroPaso": 9,
+      "linea": 3,
+      "iteracion": 2,
+      "instruccion": "evaluar numero > 1",
+      "evalua": {
+        "@type": "Condicion",
+        "@id": "condicion_linea3",
+        "expresion": "numero > 1",
+        "dependeDe": [
+          "numero"
+        ],
+        "resultado": true
+      }
+    },
+    {
+      "@type": "PasoDeEjecucion",
+      "numeroPaso": 10,
+      "linea": 4,
+      "iteracion": 3,
+      "instruccion": "factorial *= numero",
+      "modifica": {
+        "@type": "EstadoDeMemoria",
+        "variable": "factorial",
+        "ambito": "cuerpo_while_linea3",
+        "valorAnterior": 20,
+        "valorNuevo": 60
+      }
+    },
+    {
+      "@type": "PasoDeEjecucion",
+      "numeroPaso": 11,
+      "linea": 5,
+      "iteracion": 3,
+      "instruccion": "numero -= 1",
+      "modifica": {
+        "@type": "EstadoDeMemoria",
+        "variable": "numero",
+        "ambito": "cuerpo_while_linea3",
+        "valorAnterior": 3,
+        "valorNuevo": 2
+      }
+    },
+    {
+      "@type": "PasoDeEjecucion",
+      "numeroPaso": 12,
+      "linea": 3,
+      "iteracion": 3,
+      "instruccion": "evaluar numero > 1",
+      "evalua": {
+        "@type": "Condicion",
+        "@id": "condicion_linea3",
+        "expresion": "numero > 1",
+        "dependeDe": [
+          "numero"
+        ],
+        "resultado": true
+      }
+    },
+    {
+      "@type": "PasoDeEjecucion",
+      "numeroPaso": 13,
+      "linea": 4,
+      "iteracion": 4,
+      "instruccion": "factorial *= numero",
+      "modifica": {
+        "@type": "EstadoDeMemoria",
+        "variable": "factorial",
+        "ambito": "cuerpo_while_linea3",
+        "valorAnterior": 60,
+        "valorNuevo": 120
+      }
+    },
+    {
+      "@type": "PasoDeEjecucion",
+      "numeroPaso": 14,
+      "linea": 5,
+      "iteracion": 4,
+      "instruccion": "numero -= 1",
+      "modifica": {
+        "@type": "EstadoDeMemoria",
+        "variable": "numero",
+        "ambito": "cuerpo_while_linea3",
+        "valorAnterior": 2,
+        "valorNuevo": 1
+      }
+    },
+    {
+      "@type": "PasoDeEjecucion",
+      "numeroPaso": 15,
+      "linea": 3,
+      "iteracion": 4,
+      "instruccion": "evaluar numero > 1",
+      "evalua": {
+        "@type": "Condicion",
+        "@id": "condicion_linea3",
+        "expresion": "numero > 1",
+        "dependeDe": [
+          "numero"
+        ],
+        "resultado": false
+      }
+    }
+  ]
+}

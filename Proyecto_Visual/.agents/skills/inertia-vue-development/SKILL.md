@@ -65,7 +65,6 @@ import { Link } from '@inertiajs/vue3'
 <template>
     <div>
         <Link href="/">Home</Link>
-        <Link href="/blanco">Blanco</Link>
         <Link href="/users">Users</Link>
         <Link :href="`/users/${user.id}`">View User</Link>
     </div>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit bootstrap="vendor/autoload.php" colors="true">
+    <testsuites>
+        <testsuite name="E2EActividad">
+            <file>tests/Browser/E2EActividadTest.php</file>
+        </testsuite>
+    </testsuites>
+    <php>
+        <env name="PANTHER_EXTERNAL_BASE_URI" value="http://127.0.0.1:8001"/>
+    </php>
+</phpunit>
