@@ -639,3 +639,205 @@
         flex-direction: column;
     }
 }
+
+/* =========================================================
+   MODO OSCURO (html.dark .actividades-app)
+   ========================================================= */
+
+html.dark .actividades-app {
+    background: #12101F;
+    color: #E2DFEC;
+}
+
+html.dark .actividades-app .encabezado h1 {
+    color: #FFFFFF;
+}
+
+html.dark .actividades-app .encabezado p {
+    color: #8E89A8;
+}
+
+html.dark .actividades-app .boton-salir {
+    border-color: #362D5E;
+    color: #C5B6F5;
+}
+
+html.dark .actividades-app .boton-salir:hover {
+    background: #201A3B;
+    color: #FFFFFF;
+}
+
+html.dark .actividades-app .titulo-seccion h2 {
+    color: #FFFFFF;
+}
+
+html.dark .actividades-app .etiqueta-ejemplo {
+    background: #201A3B;
+    border-color: #362D5E;
+    color: #C5B6F5;
+}
+
+html.dark .actividades-app .buscador input {
+    background: #1C1833;
+    border-color: #2F2752;
+    color: #FFFFFF;
+}
+
+html.dark .actividades-app .buscador input::placeholder {
+    color: #6E678A;
+}
+
+html.dark .actividades-app .buscador svg {
+    color: #8E89A8;
+}
+
+html.dark .actividades-app .filtro-estado label {
+    color: #8E89A8;
+}
+
+html.dark .actividades-app .filtro-estado select {
+    background: #1C1833;
+    border-color: #2F2752;
+    color: #FFFFFF;
+}
+
+html.dark .actividades-app .conteo {
+    color: #8E89A8;
+}
+
+html.dark .actividades-app .tarjeta {
+    background: #1C1833;
+    border-color: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+}
+
+html.dark .actividades-app .tarjeta:hover,
+html.dark .actividades-app .tarjeta-seleccionada {
+    background: #231E3D;
+    border-color: #4F388E;
+}
+
+html.dark .actividades-app .tema {
+    color: #A78BFA;
+}
+
+html.dark .actividades-app .titulo-tarjeta {
+    color: #FFFFFF;
+}
+
+html.dark .actividades-app .descripcion-tarjeta {
+    color: #8E89A8;
+}
+
+html.dark .actividades-app .panel {
+    background: #1C1833;
+    border-color: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+}
+
+html.dark .actividades-app .panel h3 {
+    color: #FFFFFF;
+}
+
+html.dark .actividades-app .subtitulo-panel {
+    color: #8E89A8;
+}
+
+html.dark .actividades-app .cerrar {
+    background: #201A3B;
+    border-color: #362D5E;
+    color: #C5B6F5;
+}
+
+html.dark .actividades-app .cerrar:hover {
+    background: #2B234A;
+    color: #FFFFFF;
+}
+
+html.dark .actividades-app .bloque-instrucciones {
+    background: #18142A;
+    border-color: #2F2652;
+}
+
+html.dark .actividades-app .instruccion {
+    color: #D6D1E8;
+    border-bottom-color: rgba(255, 255, 255, 0.04);
+}
+
+html.dark .actividades-app .numero-instruccion {
+    background: #2C2053;
+    color: #C5B6F5;
+}
+
+html.dark .actividades-app .boton-abrir {
+    background: #6D3DE8;
+    border-color: #6D3DE8;
+    color: #FFFFFF;
+    box-shadow: 0 4px 14px rgba(109, 61, 232, 0.4);
+}
+
+html.dark .actividades-app .boton-abrir:hover {
+    background: #5E2ED8;
+}
+
+html.dark .actividades-app .vacio {
+    background: #1C1833;
+    border-color: #362D5E;
+    color: #8E89A8;
+}
+
+html.dark .actividades-app .vacio h3 {
+    color: #FFFFFF;
+}
+
+html.dark .actividades-app .vacio p {
+    color: #8E89A8;
+}
+
+html.dark .actividades-app .recientes h2 {
+    color: #FFFFFF;
+}
+
+html.dark .actividades-app .fila-reciente {
+    background: #201A3B;
+    border: 1px solid #2F2752;
+    color: #FFFFFF;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+html.dark .actividades-app .fila-reciente:hover {
+    background: #2B234C;
+    border-color: #453775;
+}
+
+html.dark .actividades-app .fila-reciente > span {
+    color: #FFFFFF;
+    font-weight: 500;
+}
+
+html.dark .actividades-app .fila-reciente time {
+    color: #A78BFA;
+}
+
+html.dark .actividades-app .sin-recientes {
+    color: #8E89A8;
+}
+
+
+html.dark .actividades-app .estado.estado-pendiente {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: rgba(245, 158, 11, 0.3);
+    color: #FCD34D;
+}
+
+html.dark .actividades-app .estado.estado-en_curso {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.3);
+    color: #93C5FD;
+}
+
+html.dark .actividades-app .estado.estado-completada {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.3);
+    color: #6EE7B7;
+}

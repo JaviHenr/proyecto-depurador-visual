@@ -2,6 +2,7 @@
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import BarraLateral from '../components/BarraLateral.vue';
+import BotonModoOscuro from '../components/BotonModoOscuro.vue';
 import ControlesEjecucion from '../components/depurador/ControlesEjecucion.vue';
 import VisorCodigo from '../components/depurador/VisorCodigo.vue';
 import PanelMemoria from '../components/depurador/PanelMemoria.vue';
@@ -120,7 +121,11 @@ function cerrarSesion() {
                     <h1>{{ codigo ? codigo.nombre_codigo : 'Depuración visual' }}</h1>
                     <p>{{ codigo ? 'Edita el código y observa su ejecución visual cuando exista una traza compatible.' : 'Sigue el código y descubre cómo cambia la memoria.' }}</p>
                 </div>
-                <div class="dv-acciones-cuenta"><span class="dv-avatar" aria-hidden="true">{{ inicial }}</span><button type="button" class="dv-salir" :disabled="cerrandoSesion" @click="cerrarSesion">{{ cerrandoSesion ? 'Cerrando sesión…' : 'Cerrar Sesión' }}</button></div>
+                <div class="dv-acciones-cuenta">
+                    <BotonModoOscuro />
+                    <span class="dv-avatar" aria-hidden="true">{{ inicial }}</span>
+                    <button type="button" class="dv-salir" :disabled="cerrandoSesion" @click="cerrarSesion">{{ cerrandoSesion ? 'Cerrando sesión…' : 'Cerrar Sesión' }}</button>
+                </div>
             </header>
 
             <p v-if="page.props.aulaFlash" class="dv-aviso correcto" role="status">{{ page.props.aulaFlash }}</p>

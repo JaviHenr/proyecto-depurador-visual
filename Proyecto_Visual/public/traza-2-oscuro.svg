@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Camino de ejecución violeta sobre fondo oscuro">
+  <rect x="2" y="2" width="196" height="196" rx="42" fill="#201A3B" stroke="#3D3268" stroke-width="4"/>
+  <polyline points="46,138 82,138 82,100 118,100 118,62 154,62" fill="none" stroke="#8E70E8" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity="0.45"/>
+  <circle cx="46" cy="138" r="9" fill="#FAF6F1"/>
+  <circle cx="154" cy="62" r="9" fill="#8E70E8" opacity="0.45"/>
+  <circle cx="118" cy="100" r="22" fill="#7CC8F0" opacity="0.3"/>
+  <circle cx="118" cy="100" r="13" fill="#7CC8F0"/>
+</svg>

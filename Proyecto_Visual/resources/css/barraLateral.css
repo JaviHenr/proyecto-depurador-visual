@@ -1,15 +1,17 @@
-/* ==========================================
-   Barra Lateral Global (Idéntica a Dashboard)
-   ========================================== */
+/* =========================================================
+   Barra Lateral Global - Identidad Visual "Depurador Visual"
+   Soporte completo para Modo Claro (cream) y Modo Oscuro
+   ========================================================= */
+
 .barra-lateral {
-    width: 240px;
-    min-width: 240px;
-    background-color: #FFFFFF;
+    width: 250px;
+    min-width: 250px;
+    background-color: #FAF8F5;
     padding: 32px 20px;
     display: flex;
     flex-direction: column;
     gap: 32px;
-    box-shadow: 0 8px 24px rgba(138, 149, 158, 0.08);
+    border-right: 1px solid rgba(0, 0, 0, 0.04);
     height: 100vh;
     height: 100dvh;
     position: sticky;
@@ -18,42 +20,70 @@
     box-sizing: border-box;
     z-index: 10;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
+/* Marca superior con logo traza y texto apilado */
 .barra-lateral .marca {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding-left: 8px;
-    text-decoration: none;
+    padding: 2px 4px;
 }
 
 .barra-lateral .texto-marca {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     text-decoration: none;
+    color: inherit;
+}
+
+.barra-lateral .logo-marca-contenedor {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background-color: #FAF6F1;
+    border: 1px solid #E6DDFB;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(106, 63, 208, 0.08);
+    flex-shrink: 0;
+    transition: transform 0.2s ease, background-color 0.25s ease, border-color 0.25s ease;
+}
+
+.barra-lateral .texto-marca:hover .logo-marca-contenedor {
+    transform: scale(1.03);
 }
 
 .barra-lateral .logo-marca {
-    width: 28px;
-    height: 28px;
+    width: 100%;
+    height: 100%;
+    border-radius: 11px;
     object-fit: contain;
-    flex-shrink: 0;
     user-select: none;
 }
 
-.barra-lateral .titulo-marca {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #6C5CE7;
-    text-decoration: none;
+.barra-lateral .marca-texto-apilado {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
 }
 
+.barra-lateral .marca-palabra-1,
+.barra-lateral .marca-palabra-2 {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #1E1B38;
+    letter-spacing: -0.02em;
+    transition: color 0.25s ease;
+}
+
+/* Menú de navegación */
 .barra-lateral .menu-navegacion {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     margin: 0;
     padding: 0;
 }
@@ -61,16 +91,16 @@
 .barra-lateral .btn-navegacion {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
     padding: 12px 16px;
-    border-radius: 12px;
+    border-radius: 14px;
     border: none;
     background: transparent;
-    color: #3D3D4E;
+    color: #555269;
     font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.2s, color 0.2s;
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
     text-align: left;
     width: 100%;
     text-decoration: none;
@@ -78,79 +108,218 @@
     font-family: inherit;
 }
 
-.barra-lateral .btn-navegacion:hover,
-.barra-lateral .btn-navegacion.activo {
-    background-color: #EBE4FB;
-    color: #5544BE;
+.barra-lateral .btn-navegacion:hover {
+    background-color: #F1EDFB;
+    color: #1E1B38;
 }
 
+.barra-lateral .btn-navegacion.activo {
+    background-color: #EDE7F9;
+    color: #4F26C6;
+    font-weight: 700;
+}
+
+.barra-lateral .contenedor-icono-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.barra-lateral .icono-nav {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+    transition: stroke 0.2s ease;
+}
+
+.barra-lateral .etiqueta-nav {
+    flex: 1;
+}
+
+/* Punto indicador en el elemento activo */
+.barra-lateral .indicador-activo {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: #4F26C6;
+    margin-left: auto;
+    flex-shrink: 0;
+    transition: background-color 0.25s ease;
+}
+
+/* Pie de barra lateral con información del usuario y logout */
 .barra-lateral .pie-barra-lateral {
     margin-top: auto;
     display: flex;
     flex-direction: column;
     gap: 12px;
     padding-top: 20px;
-    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    transition: border-color 0.25s ease;
 }
 
 .barra-lateral .ficha-usuario {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     padding: 6px 8px;
 }
 
 .barra-lateral .avatar-usuario-sm {
-    width: 34px;
-    height: 34px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    background-color: #E0F2FE;
-    color: #0284C7;
-    font-size: 0.85rem;
-    font-weight: 700;
+    background-color: #EDE7F9;
+    color: #4F26C6;
+    font-size: 1rem;
+    font-weight: 800;
     display: grid;
     place-items: center;
     flex-shrink: 0;
+    transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 .barra-lateral .info-usuario {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    gap: 2px;
 }
 
 .barra-lateral .nombre-usuario {
-    font-size: 0.88rem;
-    font-weight: 600;
-    color: #3D3D4E;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #1E1B38;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    transition: color 0.25s ease;
 }
 
 .barra-lateral .rol-usuario {
-    font-size: 0.75rem;
-    color: #8E8E9F;
+    font-size: 0.78rem;
+    color: #7E7A92;
     text-transform: capitalize;
+    transition: color 0.25s ease;
 }
 
 .barra-lateral .btn-cerrar-sesion-nav {
-    color: #991B1B;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: none;
+    background: transparent;
+    color: #D32F2F;
+    font-size: 0.92rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    width: 100%;
+    text-align: left;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.barra-lateral .btn-cerrar-sesion-nav .icono-logout {
+    width: 19px;
+    height: 19px;
+    stroke: currentColor;
+    flex-shrink: 0;
 }
 
 .barra-lateral .btn-cerrar-sesion-nav:hover {
     background-color: #FEF2F2;
-    color: #7F1D1D;
+    color: #B91C1C;
 }
 
-@media (max-width: 700px) {
+/* =========================================================
+   MODO OSCURO (html.dark .barra-lateral)
+   ========================================================= */
+
+html.dark .barra-lateral {
+    background-color: #171426;
+    border-right-color: rgba(255, 255, 255, 0.04);
+}
+
+html.dark .barra-lateral .logo-marca-contenedor {
+    background-color: #201A3B;
+    border-color: #382D60;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+html.dark .barra-lateral .marca-palabra-1,
+html.dark .barra-lateral .marca-palabra-2 {
+    color: #FFFFFF;
+}
+
+html.dark .barra-lateral .btn-navegacion {
+    color: #928DAA;
+}
+
+html.dark .barra-lateral .btn-navegacion:hover {
+    background-color: #231E3D;
+    color: #FFFFFF;
+}
+
+html.dark .barra-lateral .btn-navegacion.activo {
+    background-color: #2C2053;
+    color: #C5B6F5;
+}
+
+html.dark .barra-lateral .indicador-activo {
+    background-color: #A78BFA;
+}
+
+html.dark .barra-lateral .pie-barra-lateral {
+    border-top-color: rgba(255, 255, 255, 0.06);
+}
+
+html.dark .barra-lateral .avatar-usuario-sm {
+    background-color: #2C2053;
+    color: #C5B6F5;
+}
+
+html.dark .barra-lateral .nombre-usuario {
+    color: #FFFFFF;
+}
+
+html.dark .barra-lateral .rol-usuario {
+    color: #8E89A8;
+}
+
+html.dark .barra-lateral .btn-cerrar-sesion-nav {
+    color: #F87171;
+}
+
+html.dark .barra-lateral .btn-cerrar-sesion-nav:hover {
+    background-color: rgba(239, 68, 68, 0.12);
+    color: #FCA5A5;
+}
+
+/* Responsividad para móviles y pantallas reducidas */
+@media (max-width: 820px) {
     .barra-lateral {
         position: static;
         width: 100%;
         min-width: 0;
         height: auto;
-        padding: 18px 16px 12px;
+        padding: 16px 16px 12px;
         gap: 16px;
+        border-right: none;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    html.dark .barra-lateral {
+        border-bottom-color: rgba(255, 255, 255, 0.06);
+    }
+
+    .barra-lateral .marca {
+        justify-content: space-between;
     }
 
     .barra-lateral .menu-navegacion {
@@ -158,13 +327,19 @@
         flex-direction: row;
         gap: 6px;
         overflow-x: auto;
+        padding-bottom: 4px;
     }
 
     .barra-lateral .btn-navegacion {
         flex: 0 0 auto;
         width: auto;
-        padding: 8px 14px;
-        font-size: 0.85rem;
+        padding: 8px 12px;
+        font-size: 0.88rem;
+        gap: 8px;
+    }
+
+    .barra-lateral .indicador-activo {
+        display: none;
     }
 
     .barra-lateral .pie-barra-lateral {

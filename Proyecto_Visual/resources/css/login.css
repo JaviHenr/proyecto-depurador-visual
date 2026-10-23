@@ -1,147 +1,213 @@
-.layout-login {
-    --bg-app: #FAF7F2;
-    /* Fondo crema cálido igual al Dashboard */
-    --bg-card: #FFFFFF;
-    --text-dark: #3D3D4E;
-    --text-muted: #8E8E9F;
+/* =================================================================
+   Login Split Screen - Identidad Visual "Depurador Visual"
+   Banner violeta con logo traza y panel derecho (Modo Claro y Oscuro)
+   ================================================================= */
 
-    --pastel-lila: #EBE4FB;
-    --primary: #6C5CE7;
-    --primary-hover: #5846E0;
-
-    --radius-lg: 20px;
-    --radius-md: 12px;
-    --shadow-soft: 0 8px 24px rgba(138, 149, 158, 0.08);
+.layout-login-split {
+    --bg-app: #FAF8F5;
+    --purple-brand: #4A24B2;
+    --purple-btn: #552BC9;
+    --purple-hover: #4620A8;
+    --text-heading: #1E1B38;
+    --text-muted: #76728A;
+    --border-input: #ECE7F2;
 
     display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
     min-height: 100vh;
+    min-height: 100dvh;
+    width: 100%;
     background-color: var(--bg-app);
-    color: var(--text-dark);
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    padding: 32px 16px;
     box-sizing: border-box;
+    overflow-x: hidden;
+    transition: background-color 0.25s ease;
 }
 
-/* Encabezado */
-.brand-header {
-    text-align: center;
-    margin-bottom: 28px;
+/* Panel Izquierdo: Banner institucional con gráfico de traza */
+.panel-banner-login {
+    flex: 1.1;
+    background: linear-gradient(150deg, #5127BD 0%, #431FA5 100%);
+    color: #FFFFFF;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 54px 60px;
+    position: relative;
+    overflow: hidden;
+    box-sizing: border-box;
+    transition: background 0.25s ease;
 }
 
-.brand-logo {
-    width: 64px;
-    height: 64px;
+.banner-top {
+    position: relative;
+    z-index: 2;
+}
+
+.banner-logo-marca {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.brand-logo-contenedor {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background-color: #FAF6F1;
+    border: 1px solid #E6DDFB;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
+    flex-shrink: 0;
+    transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+.brand-logo-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 11px;
     object-fit: contain;
-    margin: 0 auto 12px;
-    display: block;
     user-select: none;
 }
 
-.brand-title {
-    font-size: 1.8rem;
-    font-weight: 800;
-    letter-spacing: -0.025em;
-    color: #2D2B52;
-    line-height: 1.2;
-    margin: 0;
-}
-
-.brand-accent {
-    background: linear-gradient(135deg, #6C5CE7 0%, #8E7CF7 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-left: 5px;
-}
-
-.brand-subtitle {
-    font-size: 0.78rem;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-top: 6px;
-}
-
-/* Tarjeta */
-.login-card {
-    width: 100%;
-    max-width: 390px;
-    background-color: var(--bg-card);
-    padding: 36px 32px;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-soft);
-    border: 1px solid rgba(0, 0, 0, 0.03);
-    box-sizing: border-box;
-}
-
-.card-header {
-    text-align: center;
-    margin-bottom: 24px;
-}
-
-.card-header h2 {
+.banner-titulo-marca {
     font-size: 1.25rem;
     font-weight: 700;
-    color: var(--text-dark);
-    margin: 0 0 6px 0;
+    color: #FFFFFF;
+    letter-spacing: -0.01em;
 }
 
-.card-header p {
-    font-size: 0.85rem;
+.banner-content {
+    position: relative;
+    z-index: 2;
+    margin-top: auto;
+    padding-bottom: 24px;
+}
+
+.banner-slogan {
+    font-size: clamp(2.1rem, 3.5vw, 2.85rem);
+    font-weight: 800;
+    color: #FFFFFF;
+    line-height: 1.16;
+    letter-spacing: -0.025em;
+    margin: 0;
+    max-width: 480px;
+}
+
+/* Marca de agua decorativa en forma de traza en la esquina inferior derecha */
+.banner-watermark-wrapper {
+    position: absolute;
+    right: -25px;
+    bottom: 30px;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.95;
+}
+
+.banner-watermark {
+    width: 440px;
+    height: auto;
+    max-width: 90vw;
+}
+
+/* Panel Derecho: Formulario de inicio de sesión */
+.panel-formulario-login {
+    flex: 1;
+    background-color: var(--bg-app);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 32px;
+    position: relative;
+    box-sizing: border-box;
+    transition: background-color 0.25s ease;
+}
+
+/* Posición del botón de cambio de tema (Luna / Sol) en la esquina superior derecha */
+.login-theme-toggle-wrapper {
+    position: absolute;
+    top: 28px;
+    right: 28px;
+    z-index: 10;
+}
+
+.contenedor-formulario-login {
+    width: 100%;
+    max-width: 390px;
+}
+
+.login-header {
+    margin-bottom: 32px;
+}
+
+.login-header h2 {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text-heading);
+    margin: 0 0 8px 0;
+    letter-spacing: -0.02em;
+    transition: color 0.25s ease;
+}
+
+.login-header p {
+    font-size: 0.95rem;
     color: var(--text-muted);
     margin: 0;
+    transition: color 0.25s ease;
 }
 
-/* Alerta */
+/* Alerta de error */
 .error-alert {
-    padding: 10px 14px;
+    padding: 12px 16px;
     background-color: #FEF2F2;
     border: 1px solid #FECACA;
-    border-radius: var(--radius-md);
+    border-radius: 12px;
     color: #991B1B;
-    font-size: 0.82rem;
-    margin-bottom: 18px;
+    font-size: 0.85rem;
+    margin-bottom: 20px;
 }
 
 /* Formulario */
 .login-form {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 20px;
 }
 
 .form-group {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
 }
 
 .form-group label {
-    font-size: 0.82rem;
+    font-size: 0.88rem;
     font-weight: 600;
-    color: #4B4B5C;
+    color: #2D2942;
+    transition: color 0.25s ease;
 }
 
 .form-input {
     width: 100%;
-    padding: 11px 14px;
-    background-color: #FAF9F7;
-    border: 1px solid #E5E3DF;
-    border-radius: var(--radius-md);
-    font-size: 0.9rem;
-    color: var(--text-dark);
+    padding: 13px 16px;
+    background-color: #FFFFFF;
+    border: 1.5px solid var(--border-input);
+    border-radius: 12px;
+    font-size: 0.95rem;
+    color: var(--text-heading);
     outline: none;
-    transition: all 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.25s ease, color 0.25s ease;
     box-sizing: border-box;
 }
 
+.form-input::placeholder {
+    color: #A6A2B8;
+}
+
 .form-input:focus {
-    background-color: #FFFFFF;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.12);
+    border-color: var(--purple-btn);
+    box-shadow: 0 0 0 3.5px rgba(85, 43, 201, 0.12);
 }
 
 .password-wrapper {
@@ -150,73 +216,202 @@
     align-items: center;
 }
 
-.password-wrapper .form-input {
+.form-input-password {
     padding-right: 64px;
 }
 
 .btn-toggle-pwd {
     position: absolute;
-    right: 12px;
+    right: 14px;
     background: none;
     border: none;
-    font-size: 0.8rem;
-    color: var(--text-muted);
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--purple-btn);
     cursor: pointer;
-    padding: 4px;
-    transition: color 0.2s;
+    padding: 4px 6px;
+    transition: color 0.2s ease;
 }
 
 .btn-toggle-pwd:hover {
-    color: var(--text-dark);
+    color: var(--purple-hover);
 }
 
 .form-options {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.82rem;
+    margin-top: -2px;
 }
 
 .checkbox-label {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 9px;
     cursor: pointer;
-    color: var(--text-muted);
+    color: #6E6A82;
+    font-size: 0.88rem;
     user-select: none;
+    transition: color 0.25s ease;
 }
 
 .checkbox {
-    accent-color: var(--primary);
-    width: 15px;
-    height: 15px;
+    accent-color: var(--purple-btn);
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
     cursor: pointer;
 }
 
 .btn-submit {
     width: 100%;
-    padding: 12px;
-    background-color: var(--primary);
+    padding: 14px;
+    background-color: var(--purple-btn);
     color: #FFFFFF;
     border: none;
-    border-radius: var(--radius-md);
-    font-size: 0.95rem;
+    border-radius: 12px;
+    font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
-    box-shadow: 0 4px 14px rgba(108, 92, 231, 0.22);
+    transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+    box-shadow: 0 8px 24px rgba(85, 43, 201, 0.35);
     display: flex;
     justify-content: center;
     align-items: center;
+    margin-top: 6px;
 }
 
 .btn-submit:hover:not(:disabled) {
-    background-color: var(--primary-hover);
+    background-color: var(--purple-hover);
     transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(108, 92, 231, 0.3);
+    box-shadow: 0 10px 28px rgba(85, 43, 201, 0.45);
 }
 
 .btn-submit:disabled {
     opacity: 0.65;
     cursor: not-allowed;
+}
+
+/* =================================================================
+   MODO OSCURO (html.dark .layout-login-split) - Screenshot 2
+   ================================================================= */
+
+html.dark .layout-login-split {
+    --bg-app: #12101F;
+    --text-heading: #FFFFFF;
+    --text-muted: #8E89A8;
+    --border-input: #2F2752;
+}
+
+html.dark .panel-banner-login {
+    background: linear-gradient(150deg, #371A82 0%, #2A1368 100%);
+}
+
+html.dark .brand-logo-contenedor {
+    background-color: #201A3B;
+    border-color: #382D60;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+html.dark .panel-formulario-login {
+    background-color: #12101F;
+}
+
+html.dark .login-header h2 {
+    color: #FFFFFF;
+}
+
+html.dark .login-header p {
+    color: #8E89A8;
+}
+
+html.dark .form-group label {
+    color: #D6D1E8;
+}
+
+html.dark .form-input {
+    background-color: #1D1833;
+    border-color: #2F2752;
+    color: #FFFFFF;
+}
+
+html.dark .form-input::placeholder {
+    color: #6E678A;
+}
+
+html.dark .form-input:focus {
+    border-color: #8B5CF6;
+    box-shadow: 0 0 0 3.5px rgba(139, 92, 246, 0.2);
+}
+
+html.dark .btn-toggle-pwd {
+    color: #A78BFA;
+}
+
+html.dark .btn-toggle-pwd:hover {
+    color: #C4B5FD;
+}
+
+html.dark .checkbox-label {
+    color: #8E89A8;
+}
+
+html.dark .checkbox {
+    accent-color: #7C3AED;
+}
+
+html.dark .btn-submit {
+    background-color: #6D3DE8;
+    box-shadow: 0 8px 24px rgba(109, 61, 232, 0.45);
+}
+
+html.dark .btn-submit:hover:not(:disabled) {
+    background-color: #5E2ED8;
+    box-shadow: 0 10px 28px rgba(109, 61, 232, 0.55);
+}
+
+html.dark .error-alert {
+    background-color: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #FCA5A5;
+}
+
+/* Responsividad para tabletas y dispositivos móviles */
+@media (max-width: 900px) {
+    .layout-login-split {
+        flex-direction: column;
+    }
+
+    .panel-banner-login {
+        padding: 36px 24px 44px;
+        flex: none;
+    }
+
+    .banner-content {
+        margin-top: 32px;
+        padding-bottom: 0;
+    }
+
+    .banner-slogan {
+        font-size: 1.75rem;
+    }
+
+    .banner-watermark-wrapper {
+        right: -30px;
+        bottom: -20px;
+        opacity: 0.5;
+    }
+
+    .banner-watermark {
+        width: 260px;
+    }
+
+    .panel-formulario-login {
+        padding: 40px 20px;
+    }
+
+    .login-theme-toggle-wrapper {
+        top: 20px;
+        right: 20px;
+    }
 }

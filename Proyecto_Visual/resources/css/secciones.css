@@ -1063,3 +1063,178 @@
         gap: 18px;
     }
 }
+
+/* =========================================================
+   MODO OSCURO (html.dark .secciones-app)
+   ========================================================= */
+
+html.dark .secciones-app {
+    background: #12101F;
+    color: #E2DFEC;
+}
+
+html.dark .secciones-app .encabezado h1 {
+    color: #FFFFFF;
+}
+
+html.dark .secciones-app .encabezado p {
+    color: #8E89A8;
+}
+
+html.dark .secciones-app .boton-salir {
+    border-color: #362D5E;
+    color: #C5B6F5;
+}
+
+html.dark .secciones-app .boton-salir:hover {
+    background: #201A3B;
+    color: #FFFFFF;
+}
+
+html.dark .secciones-app .nota-prototipo {
+    background: #1E1A33;
+    border-color: #382C60;
+    color: #A78BFA;
+}
+
+html.dark .secciones-app .titulo-seccion h2 {
+    color: #FFFFFF;
+}
+
+html.dark .secciones-app .buscador input {
+    background: #1C1833;
+    border-color: #2F2752;
+    color: #FFFFFF;
+}
+
+html.dark .secciones-app .buscador input::placeholder {
+    color: #6E678A;
+}
+
+html.dark .secciones-app .buscador svg {
+    color: #8E89A8;
+}
+
+html.dark .secciones-app .filtro-estado label {
+    color: #8E89A8;
+}
+
+html.dark .secciones-app .filtro-estado select {
+    background: #1C1833;
+    border-color: #2F2752;
+    color: #FFFFFF;
+}
+
+html.dark .secciones-app .conteo {
+    color: #8E89A8;
+}
+
+html.dark .secciones-app .tarjeta {
+    background: #1C1833;
+    border-color: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+}
+
+html.dark .secciones-app .tarjeta:hover {
+    background: #231E3D;
+    border-color: #4F388E;
+}
+
+html.dark .secciones-app .tema {
+    color: #A78BFA;
+}
+
+html.dark .secciones-app .titulo-tarjeta {
+    color: #FFFFFF;
+}
+
+html.dark .secciones-app .descripcion-tarjeta {
+    color: #8E89A8;
+}
+
+html.dark .secciones-app .docente-tarjeta,
+html.dark .secciones-app .periodo-tarjeta {
+    color: #A78BFA;
+}
+
+html.dark .secciones-app .resumen-seccion {
+    color: #8E89A8;
+}
+
+html.dark .secciones-app .formulario-local {
+    background: #1C1833;
+    border-color: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+}
+
+html.dark .secciones-app .campo {
+    color: #D6D1E8;
+}
+
+html.dark .secciones-app .campo input,
+html.dark .secciones-app .campo textarea {
+    background: #201A3B;
+    border-color: #362D5E;
+    color: #FFFFFF;
+}
+
+html.dark .secciones-app .detalle-seccion {
+    background: #1C1833;
+    border-color: rgba(255, 255, 255, 0.06);
+}
+
+html.dark .secciones-app .pestanas-seccion button {
+    color: #8E89A8;
+}
+
+html.dark .secciones-app .pestanas-seccion button.pestana-activa {
+    color: #C5B6F5;
+    border-bottom-color: #8B5CF6;
+}
+
+html.dark .secciones-app .fila-estudiante {
+    background: #201A3B;
+    border-color: #2F2752;
+}
+
+html.dark .secciones-app .fila-estudiante span {
+    color: #FFFFFF;
+}
+
+html.dark .secciones-app .fila-estudiante p {
+    color: #8E89A8;
+}
+
+html.dark .secciones-app .abrir-actividad {
+    background: #201A3B;
+    border-color: #2F2752;
+}
+
+html.dark .secciones-app .abrir-actividad h4 {
+    color: #FFFFFF;
+}
+
+html.dark .secciones-app .abrir-actividad p {
+    color: #8E89A8;
+}
+
+html.dark .secciones-app .boton-principal {
+    background: #6D3DE8;
+    color: #FFFFFF;
+}
+
+html.dark .secciones-app .boton-secundario {
+    background: #201A3B;
+    border-color: #362D5E;
+    color: #C5B6F5;
+}
+
+html.dark .secciones-app .estado-vacio {
+    background: #1C1833;
+    border-color: #362D5E;
+    color: #8E89A8;
+}
+
+html.dark .secciones-app .estado-vacio h3 {
+    color: #FFFFFF;
+}
