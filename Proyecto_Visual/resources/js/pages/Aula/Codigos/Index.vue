@@ -70,8 +70,3 @@ function eliminar(codigo: CodigoResumen) {
         <Paginador :pagina="codigos" />
     </AulaLayout>
 </template>
-
-<style scoped>
-.pestanas a { padding: 10px 16px; border: 1px solid #e2d7ef; border-radius: 10px; background: #f6f1fd; color: #8b729f; }
-.pestanas a.activa { border-color: #bba0e7; background: #e9ddfb; color: #6c46b2; font-weight: 600; }
-</style>
