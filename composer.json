@@ -1,0 +1,6 @@
+{
+    "require-dev": {
+        "symfony/panther": "2.4",
+        "dbrekelmans/bdi": "1.4"
+    }
+}
