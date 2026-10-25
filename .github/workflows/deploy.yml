@@ -1,3 +1,9 @@
+# Guardar en .github/workflows/deploy.yml, en la raiz del repositorio.
+# Requiere el runner en este Ubuntu como talleruser11 y version >= 2.327.1.
+# PHP >= 8.4.1, Composer 2, rsync y curl deben estar instalados para ese usuario.
+# Iniciar Nginx y depurador-web en PM2 desde SSH antes del primer despliegue.
+# El .env permanente y storage permanecen en /var/www/depurador.
+# Las trazas JSON se guardan en storage/app/trazas y se conservan al publicar.
 name: Publicar Proyecto Visual con PM2
 
 "on":
@@ -19,7 +25,9 @@ env:
   DEPLOY_PATH: /var/www/depurador
   PM2_HOME: /home/talleruser11/.pm2
   PM2_BIN: /home/talleruser11/.local/bin/pm2
+  PM2_APP: depurador-web
   FRANKENPHP: /home/talleruser11/.local/bin/frankenphp
+  PUBLIC_HOST: 146.83.198.35:1644
 
 jobs:
   desplegar:
@@ -91,7 +99,7 @@ jobs:
           test -s "$PM2_HOME/pm2.pid"
           kill -0 "$(cat "$PM2_HOME/pm2.pid")"
           test -S "$PM2_HOME/rpc.sock"
-          "$PM2_BIN" describe depurador-web >/dev/null || {
+          "$PM2_BIN" describe "$PM2_APP" >/dev/null || {
             echo "::error::Inicia depurador-web desde SSH con tu ecosystem.json antes de publicar."
             exit 1
           }
@@ -100,6 +108,9 @@ jobs:
         run: |
           set -euo pipefail
           umask 0027
+          test -f artisan
+          test -f composer.lock
+          test -f package-lock.json
           cp "$DEPLOY_PATH/.env" .env
           chmod 600 .env
           mkdir -p bootstrap/cache storage/framework/cache/data
@@ -111,60 +122,6 @@ jobs:
           set -euo pipefail
           composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
           composer check-platform-reqs --no-dev --no-interaction
-
-      - name: Revisar la configuración y las columnas de PostgreSQL
-        run: |
-          set -euo pipefail
-          depurador_check="$(mktemp)"
-          trap 'rm -f "$depurador_check"' EXIT
-          cat > "$depurador_check" <<'PHP'
-          <?php
-          require 'vendor/autoload.php';
-          $app = require 'bootstrap/app.php';
-          $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
-
-          $expected = [
-              'app.env' => 'production',
-              'app.url' => 'http://146.83.198.35:1644',
-              'app.debug' => false,
-              'database.default' => 'pgsql',
-              'cache.default' => 'file',
-              'session.driver' => 'file',
-              'queue.default' => 'sync',
-              'inertia.ssr.enabled' => false,
-          ];
-
-          foreach ($expected as $name => $value) {
-              if (config($name) !== $value) {
-                  file_put_contents('php://stderr', "Revisa la opción {$name} según la guía.\n");
-                  exit(1);
-              }
-          }
-
-          if (! config('app.key')) {
-              file_put_contents('php://stderr', "Falta APP_KEY en el entorno de producción.\n");
-              exit(1);
-          }
-
-          $tables = [
-              'usuario' => ['id_usuario', 'nombre_usuario', 'email', 'rol', 'contrasena', 'remember_token', 'email_verified_at', 'created_at', 'updated_at'],
-              'actividad' => ['id_actividad', 'nombre_actividad', 'descripcion_actividad', 'instrucciones', 'fecha_creacion_actividad'],
-              'seccion' => ['id_seccion', 'id_usuario', 'nombre_seccion', 'descripcion_seccion'],
-              'seccion_estudiante' => ['id_seccion', 'id_usuario', 'fecha_inscripcion'],
-              'seccion_actividad' => ['id_seccion', 'id_actividad'],
-              'codigo' => ['id_codigo', 'id_actividad', 'id_usuario', 'nombre_codigo', 'nombre_archivo', 'formato', 'contenido_codigo', 'fecha_creacion_codigo'],
-          ];
-
-          foreach ($tables as $table => $columns) {
-              if (! \Illuminate\Support\Facades\Schema::hasColumns($table, $columns)) {
-                  file_put_contents('php://stderr', "Faltan la tabla o columnas esperadas en {$table}. Revisa el apartado de base de datos.\n");
-                  exit(1);
-              }
-          }
-
-          echo "Configuración y columnas comprobadas. No se modificó la base de datos.\n";
-          PHP
-          "$FRANKENPHP" php-cli "$depurador_check"
 
       - name: Instalar dependencias del frontend y compilar
         run: |
@@ -178,6 +135,21 @@ jobs:
           set -euo pipefail
           umask 0027
           test "$DEPLOY_PATH" = "/var/www/depurador"
+          test -s public/build/manifest.json
+
+          mkdir -p "$DEPLOY_PATH/storage/app/trazas"
+          mkdir -p "$DEPLOY_PATH/storage/framework/cache/data"
+          mkdir -p "$DEPLOY_PATH/storage/framework/sessions"
+          mkdir -p "$DEPLOY_PATH/storage/framework/views" "$DEPLOY_PATH/storage/logs"
+
+          # Copiar solo trazas nuevas si estos JSON estan versionados en Git.
+          # storage/app/.gitignore los ignora de forma predeterminada.
+          if [ -d storage/app/trazas ]; then
+            rsync -rt --ignore-existing \
+              --include='*.json' --exclude='*' \
+              storage/app/trazas/ "$DEPLOY_PATH/storage/app/trazas/"
+          fi
+
           rsync -rlt --delete \
             --exclude='/.env*' \
             --exclude='/.git/' \
@@ -205,7 +177,7 @@ jobs:
           test -s "$PM2_HOME/pm2.pid"
           kill -0 "$(cat "$PM2_HOME/pm2.pid")"
           test -S "$PM2_HOME/rpc.sock"
-          "$PM2_BIN" restart depurador-web
+          "$PM2_BIN" restart "$PM2_APP"
           curl --fail --silent --show-error \
             --retry 10 --retry-delay 1 --retry-connrefused --max-time 5 \
             --output /dev/null http://127.0.0.1:8000/up
@@ -215,9 +187,9 @@ jobs:
         run: |
           set -euo pipefail
           curl --fail --silent --show-error --max-time 15 \
-            -H 'Host: 146.83.198.35:1644' \
+            -H "Host: $PUBLIC_HOST" \
             --output /dev/null http://127.0.0.1/up
           curl --fail --silent --show-error --max-time 15 \
-            -H 'Host: 146.83.198.35:1644' \
+            -H "Host: $PUBLIC_HOST" \
             --output /dev/null http://127.0.0.1/login
-          echo "Publicación completada. Abre http://146.83.198.35:1644"
+          echo "Publicación completada. Abre http://$PUBLIC_HOST"

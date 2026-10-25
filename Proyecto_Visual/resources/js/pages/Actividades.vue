@@ -2,6 +2,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import BarraLateral from '../components/BarraLateral.vue';
+import BotonModoOscuro from '../components/BotonModoOscuro.vue';
 
 /*
  * Ubicación: resources/js/pages/Actividades.vue
@@ -161,6 +162,7 @@ function cerrarSesion() {
                     <p>Aquí puedes consultar tus actividades de depuración.</p>
                 </div>
                 <div class="acciones-cuenta">
+                    <BotonModoOscuro />
                     <span class="avatar" aria-hidden="true">{{ inicial }}</span>
                     <button type="button" class="boton-salir" :disabled="cerrandoSesion" @click="cerrarSesion">
                         {{ cerrandoSesion ? 'Cerrando sesión…' : 'Cerrar Sesión' }}

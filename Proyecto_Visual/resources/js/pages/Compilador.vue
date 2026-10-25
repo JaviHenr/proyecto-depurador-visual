@@ -1,7 +1,25 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import BarraLateral from '../components/BarraLateral.vue';
+import BotonModoOscuro from '../components/BotonModoOscuro.vue';
+
+const page = usePage<{
+    actor?: { id: number; nombre: string; rol: string };
+    auth?: { user?: { nombre_usuario?: string; name?: string; rol?: string } };
+    usuario?: { nombre_usuario?: string; name?: string; rol?: string };
+}>();
+
+const currentUser = computed(() => (page.props as any).usuario ?? (page.props as any).auth?.user ?? null);
+const userName = computed(() => currentUser.value?.nombre_usuario || currentUser.value?.name || page.props.actor?.nombre || 'Profesor de prueba');
+const inicial = computed(() => userName.value.trim().charAt(0).toUpperCase() || 'P');
+
+const cerrandoSesion = ref(false);
+const cerrarSesion = () => {
+    if (cerrandoSesion.value) return;
+    cerrandoSesion.value = true;
+    router.post('/logout', {}, { onFinish: () => { cerrandoSesion.value = false; } });
+};
 
 type Valor = string | number | boolean | null;
 
@@ -85,7 +103,14 @@ function reiniciar() {
                         <h1 class="text-xl font-semibold tracking-tight">Depurador Visual</h1>
                         <p class="mt-1 text-xs text-[#78716C]">Comprensión de estructuras iterativas</p>
                     </div>
-                    <span class="rounded-sm border border-[#E7E5E4] bg-[#FAFAF9] px-3 py-1 text-xs text-[#57534E]">Java</span>
+                    <div class="flex items-center gap-3">
+                        <BotonModoOscuro />
+                        <span class="rounded-sm border border-[#E7E5E4] bg-[#FAFAF9] px-3 py-1 text-xs text-[#57534E]">Java</span>
+                        <span class="avatar-encabezado" aria-hidden="true">{{ inicial }}</span>
+                        <button type="button" class="boton-salir" :disabled="cerrandoSesion" @click="cerrarSesion">
+                            {{ cerrandoSesion ? 'Cerrando sesión…' : 'Cerrar Sesión' }}
+                        </button>
+                    </div>
                 </div>
             </header>
 

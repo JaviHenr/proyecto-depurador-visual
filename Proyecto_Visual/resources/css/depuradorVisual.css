@@ -400,3 +400,182 @@
         padding-left: 16px;
     }
 }
+
+/* =========================================================
+   MODO OSCURO (html.dark .depurador-app)
+   ========================================================= */
+
+html.dark .depurador-app {
+    background: #12101F;
+    color: #E2DFEC;
+}
+
+html.dark .depurador-app .dv-encabezado h1 {
+    color: #FFFFFF;
+}
+
+html.dark .depurador-app .dv-encabezado p {
+    color: #8E89A8;
+}
+
+html.dark .depurador-app .dv-volver {
+    color: #A78BFA;
+}
+
+html.dark .depurador-app .dv-salir {
+    border-color: #362D5E;
+    color: #C5B6F5;
+}
+
+html.dark .depurador-app .dv-salir:hover {
+    background: #201A3B;
+    color: #FFFFFF;
+}
+
+html.dark .depurador-app .dv-seleccion {
+    background: #1C1833;
+    border-color: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+}
+
+html.dark .depurador-app .dv-ejercicio label,
+html.dark .depurador-app .dv-modos legend {
+    color: #D6D1E8;
+}
+
+html.dark .depurador-app .dv-ejercicio select,
+html.dark .depurador-app .velocidad select {
+    background: #201A3B;
+    border-color: #362D5E;
+    color: #FFFFFF;
+}
+
+html.dark .depurador-app .dv-ejercicio p,
+html.dark .depurador-app .dv-modos p,
+html.dark .depurador-app .dv-nota {
+    color: #8E89A8;
+}
+
+html.dark .depurador-app .dv-modos label {
+    background: #201A3B;
+    border-color: #362D5E;
+    color: #9D96B8;
+}
+
+html.dark .depurador-app .dv-modos label.activo {
+    background: #3B2874;
+    border-color: #5F42B5;
+    color: #FFFFFF;
+}
+
+html.dark .depurador-app .dv-panel {
+    background: #1C1833;
+    border-color: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+}
+
+html.dark .depurador-app .dv-panel-cabecera {
+    border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+html.dark .depurador-app .dv-panel-cabecera h2 {
+    color: #FFFFFF;
+}
+
+html.dark .depurador-app .dv-etiqueta {
+    background: #2A214D;
+    color: #C5B6F5;
+}
+
+html.dark .depurador-app .dv-boton {
+    background: #201A3B;
+    border-color: #362D5E;
+    color: #C5B6F5;
+}
+
+html.dark .depurador-app .dv-boton:hover:not(:disabled) {
+    background: #2B234A;
+    color: #FFFFFF;
+}
+
+html.dark .depurador-app .dv-boton.dv-primario {
+    background: #6D3DE8;
+    border-color: #6D3DE8;
+    color: #FFFFFF;
+}
+
+html.dark .depurador-app .codigo {
+    background: #161226;
+}
+
+html.dark .depurador-app .linea code {
+    color: #C5B6F5;
+}
+
+html.dark .depurador-app .linea.activa {
+    background: rgba(109, 61, 232, 0.25);
+    border-left-color: #8B5CF6;
+}
+
+html.dark .depurador-app .linea.activa code {
+    color: #FFFFFF;
+}
+
+html.dark .depurador-app .numero-linea {
+    color: #6E678A;
+}
+
+html.dark .depurador-app .palabra {
+    color: #F472B6;
+}
+
+html.dark .depurador-app .numero {
+    color: #FBBF24;
+}
+
+html.dark .depurador-app .cadena {
+    color: #34D399;
+}
+
+html.dark .depurador-app .comentario {
+    color: #6B7280;
+}
+
+html.dark .depurador-app .dv-tabla-memoria th,
+html.dark .depurador-app .dv-tabla-memoria td {
+    border-color: rgba(255, 255, 255, 0.05);
+    color: #E2DFEC;
+}
+
+html.dark .depurador-app .dv-tabla-memoria th {
+    background: #18142A;
+    color: #A78BFA;
+}
+
+html.dark .depurador-app .dv-salida-texto {
+    background: #161226;
+    border-color: #2F2652;
+    color: #34D399;
+}
+
+html.dark .depurador-app .dv-editor-cuerpo textarea {
+    background: #161226;
+    border-color: #2F2652;
+    color: #FFFFFF;
+}
+
+html.dark .depurador-app progress {
+    background: #201A3B;
+}
+
+html.dark .depurador-app progress::-webkit-progress-bar {
+    background: #201A3B;
+}
+
+html.dark .depurador-app progress::-webkit-progress-value {
+    background: #8B5CF6;
+}
+
+html.dark .depurador-app progress::-moz-progress-bar {
+    background: #8B5CF6;
+}
