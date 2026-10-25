@@ -31,6 +31,10 @@ Route::get('/actividades', function () {
     return \Inertia\Inertia::render('Actividades');
 })->middleware('auth')->name('actividades');
 
+Route::get('/ajustes', function () {
+    return \Inertia\Inertia::render('Ajustes');
+})->middleware('auth')->name('ajustes');
+
 //Route::get('/secciones', function () {
 //    return \Inertia\Inertia::render('Secciones');
 //})->middleware('auth');

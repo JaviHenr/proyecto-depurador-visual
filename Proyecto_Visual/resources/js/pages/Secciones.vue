@@ -2,6 +2,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, reactive, ref, watch } from 'vue';
 import BarraLateral from '../components/BarraLateral.vue';
+import BotonModoOscuro from '../components/BotonModoOscuro.vue';
 
 
 type EstadoSeccion = 'activa' | 'finalizada';
@@ -271,7 +272,7 @@ function cerrarSesion() {
         <main class="contenido">
             <header class="encabezado">
                 <div><h1>¡Hola, {{ nombre }}!</h1><p>{{ esProfesor ? 'Organiza tus secciones, estudiantes y actividades.' : 'Encuentra tus actividades dentro de cada sección.' }}</p></div>
-                <div class="acciones-cuenta"><span class="avatar" aria-hidden="true">{{ inicial }}</span><button type="button" class="boton-salir" :disabled="cerrandoSesion" @click="cerrarSesion">{{ cerrandoSesion ? 'Cerrando sesión…' : 'Cerrar Sesión' }}</button></div>
+                <div class="acciones-cuenta"><BotonModoOscuro /><span class="avatar" aria-hidden="true">{{ inicial }}</span><button type="button" class="boton-salir" :disabled="cerrandoSesion" @click="cerrarSesion">{{ cerrandoSesion ? 'Cerrando sesión…' : 'Cerrar Sesión' }}</button></div>
             </header>
 
             <div class="nota-prototipo"><strong>Demostración de interfaz.</strong> Los cambios son temporales y se pierden al recargar o salir. <span v-if="usandoEjemplos">Se muestran datos de ejemplo.</span></div>

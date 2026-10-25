@@ -103,6 +103,7 @@
     min-height: 100vh;
     background-color: #FBFBFA;
     color: #1C1917;
+    transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 .compilador-principal {
@@ -114,4 +115,137 @@
     .compilador-app {
         grid-template-columns: minmax(0, 1fr);
     }
+}
+
+/* ==========================================================================
+   Modo Oscuro (Compilador)
+   ========================================================================== */
+
+html.dark .compilador-app {
+    background-color: #12101F;
+    color: #E2DFEC;
+}
+
+html.dark .compilador-principal header {
+    background: #1C1833 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .compilador-principal header h1 {
+    color: #FFFFFF !important;
+}
+
+html.dark .compilador-principal header p {
+    color: #8E89A8 !important;
+}
+
+html.dark .compilador-principal header span {
+    background: #201A3B !important;
+    border-color: #362D5E !important;
+    color: #C5B6F5 !important;
+}
+
+html.dark .compilador-app section {
+    background: #1C1833 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .compilador-app section h2 {
+    color: #FFFFFF !important;
+}
+
+html.dark .compilador-app section span {
+    color: #8E89A8 !important;
+}
+
+html.dark .compilador-app .border-b,
+html.dark .compilador-app .border-t {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .control {
+    background: #201A3B;
+    border-color: #362D5E;
+    color: #E2DFEC;
+}
+
+html.dark .control:hover {
+    background: #2A224D;
+}
+
+html.dark .control-principal {
+    background: #6D3DE8;
+    border-color: #6D3DE8;
+    color: #FFFFFF;
+}
+
+html.dark .control-principal:hover {
+    background: #5E2ED8;
+}
+
+html.dark .editor-contenedor {
+    background: #151226;
+}
+
+html.dark .editor-numeros {
+    border-color: rgba(255, 255, 255, 0.08);
+    color: #6D6889;
+}
+
+html.dark .numero-activo {
+    background: rgba(109, 61, 232, 0.25);
+    color: #C5B6F5;
+}
+
+html.dark .editor-texto textarea {
+    color: #F3F1FA;
+}
+
+html.dark .linea-resaltada {
+    background: rgba(109, 61, 232, 0.25);
+}
+
+html.dark .compilador-app pre {
+    background: #151226 !important;
+    color: #C5B6F5 !important;
+}
+
+.compilador-app .avatar-encabezado {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    color: #0284C7;
+    background: #E0F2FE;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.compilador-app .boton-salir {
+    min-height: 36px;
+    padding: 7px 15px;
+    border: 1px solid #8bbafa;
+    border-radius: 12px;
+    background: transparent;
+    color: #373cd3;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.compilador-app .boton-salir:hover {
+    background: #f0f5ff;
+}
+
+html.dark .compilador-app .boton-salir {
+    border-color: #362D5E;
+    color: #C5B6F5;
+}
+
+html.dark .compilador-app .boton-salir:hover {
+    background: #201A3B;
+    color: #FFFFFF;
 }
