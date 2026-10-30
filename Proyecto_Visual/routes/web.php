@@ -1,9 +1,10 @@
 <?php
+
 require __DIR__.'/aula.php';
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
-
+use Inertia\Inertia;
 
 // Redirigir la raíz al login o al dashboard según autenticación
 Route::get('/', function () {
@@ -22,23 +23,20 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 });
 
-
 Route::get('/Compilador', function () {
-    return \Inertia\Inertia::render('Compilador');
+    return Inertia::render('Compilador');
 })->middleware('auth');
 
 Route::get('/actividades', function () {
-    return \Inertia\Inertia::render('Actividades');
+    return Inertia::render('Actividades');
 })->middleware('auth')->name('actividades');
 
-Route::get('/ajustes', function () {
-    return \Inertia\Inertia::render('Ajustes');
-})->middleware('auth')->name('ajustes');
+require __DIR__.'/ajustes.php';
 
-//Route::get('/secciones', function () {
+// Route::get('/secciones', function () {
 //    return \Inertia\Inertia::render('Secciones');
-//})->middleware('auth');
+// })->middleware('auth');
 
-//Route::get('/depurador', function () {
+// Route::get('/depurador', function () {
 //       return \Inertia\Inertia::render('DepuradorVisual');
 //   })->middleware('auth')->name('depurador');

@@ -31,11 +31,12 @@ const copiarMemoria = (memoria: Memoria): Memoria => Object.fromEntries(Object.e
 /** Lee eventos del motor. Nunca interpreta ni ejecuta las expresiones del programa. */
 export function convertirTraza(documento: unknown, fuente: string, archivo = 'contador_suma.py', titulo = 'Contador y suma'): EjemploDepuracion {
     if (!objeto(documento) || !Array.isArray(documento['@graph']) || !documento['@graph'].length || documento['@graph'].length > 5000) fallo('La traza debe tener @graph con entre 1 y 5000 pasos.');
+    if (documento.versionFormato !== undefined && (typeof documento.versionFormato !== 'string' || !/^1\.\d+$/.test(documento.versionFormato))) fallo('Versión de traza no compatible.');
     const eventos = [...documento['@graph']];
     for (const evento of eventos) {
         if (!objeto(evento) || evento['@type'] !== 'PasoDeEjecucion' || !Number.isInteger(evento.numeroPaso)) fallo('Cada evento debe ser PasoDeEjecucion con numeroPaso entero.');
     }
-    eventos.sort((a, b) => a.numeroPaso - b.numeroPaso);
+    // El orden de @graph es el orden de ejecución; no se reordena la traza.
     const cantidadLineas = normalizarFuente(fuente).split('\n').length;
     let memoria: Memoria = {};
     let salida: string[] = [];
@@ -70,14 +71,16 @@ export function convertirTraza(documento: unknown, fuente: string, archivo = 'co
         if (propio(evento, 'evalua')) {
             accion = true;
             const condicion = evento.evalua;
-            if (!objeto(condicion) || condicion['@type'] !== 'Condicion' || typeof condicion.resultado !== 'boolean') fallo('evalua debe incluir Condicion y resultado booleano.');
+            if (!objeto(condicion) || condicion['@type'] !== 'Condicion') fallo('evalua debe incluir una Condicion.');
+            const resultado = propio(evento, 'resultado') ? evento.resultado : documento.versionFormato === undefined ? condicion.resultado : undefined;
+            if (typeof resultado !== 'boolean') fallo('El paso que evalúa una condición debe incluir resultado booleano.');
             const expresion = texto(condicion.expresion, 'expresion');
             const dependencias = condicion.dependeDe ?? [];
             if (!Array.isArray(dependencias)) fallo('dependeDe debe ser una lista.');
             const dependeDe = dependencias.map(variable);
             if (dependeDe.some(nombre => !Object.hasOwn(memoria, nombre))) fallo('La condición usa una variable no declarada.');
-            paso.condicion = { expresion, resultado: condicion.resultado, dependeDe };
-            explicaciones.push(`La condición ${expresion} es ${condicion.resultado ? 'verdadera' : 'falsa'}.`);
+            paso.condicion = { expresion, resultado, dependeDe };
+            explicaciones.push(`La condición ${expresion} es ${resultado ? 'verdadera' : 'falsa'}.`);
         }
         if (propio(evento, 'salida')) {
             accion = true;

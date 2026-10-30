@@ -2,12 +2,17 @@
 
 namespace App\Http\Controllers\Aula;
 
-use App\Models\Aula\{Actividad, Codigo};
+use App\Http\ParserAst;
+use App\Models\Aula\Actividad;
+use App\Models\Aula\Codigo;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\{RedirectResponse, Request};
-use Illuminate\Support\Facades\{DB, Gate};
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\{Rule, ValidationException};
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Response;
 
 class CodigoController extends AulaController
@@ -71,30 +76,37 @@ class CodigoController extends AulaController
         $datos = $request->validate(['actividad' => ['nullable', 'integer', Rule::exists('actividad', 'id_actividad')]]);
         $actividadId = isset($datos['actividad']) ? (int) $datos['actividad'] : null;
         $this->autorizarAsociacion($actividadId);
+
         return $this->editor($request, null, $actividadId);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, ParserAst $parser): RedirectResponse
     {
         Gate::authorize('create', Codigo::class);
         $datos = $this->datos($request);
-        $codigo = DB::transaction(function () use ($request, $datos) {
+        $this->autorizarAsociacion(isset($datos['id_actividad']) ? (int) $datos['id_actividad'] : null);
+        $traza = $parser->generar($datos['contenido_codigo']);
+        $codigo = DB::transaction(function () use ($request, $datos, $traza) {
             $actividadId = isset($datos['id_actividad']) ? (int) $datos['id_actividad'] : null;
             $this->autorizarAsociacion($actividadId, bloquear: true);
             $codigo = new Codigo(Arr::except($datos, ['id_actividad']));
             $codigo->id_usuario = $request->user()->getAuthIdentifier();
             $codigo->id_actividad = $actividadId;
             $codigo->fecha_creacion_codigo = now()->toDateString();
+            $codigo->traza_json = $traza;
             $codigo->save();
+
             return $codigo;
         });
+
         return to_route('depurador', ['codigo' => $codigo])
-            ->with('aula_status', 'Código guardado. Ya puedes editarlo y depurarlo.');
+            ->with('aula_status', 'Código y traza guardados. Ya puedes iniciar el recorrido.');
     }
 
     public function edit(Codigo $codigo): RedirectResponse
     {
         Gate::authorize('view', $codigo);
+
         return to_route('depurador', ['codigo' => $codigo]);
     }
 
@@ -109,7 +121,7 @@ class CodigoController extends AulaController
         return $this->pagina('DepuradorVisual', [
             'codigo' => $codigo ? $codigo->only([
                 'id_codigo', 'id_actividad', 'id_usuario', 'nombre_codigo', 'nombre_archivo',
-                'formato', 'contenido_codigo', 'fecha_creacion_codigo',
+                'formato', 'contenido_codigo', 'fecha_creacion_codigo', 'traza_json',
             ]) + ['huella' => $codigo->huella()] : null,
             'autorCodigo' => $codigo ? [
                 'nombre' => $codigo->autor?->nombre_usuario ?? 'Usuario',
@@ -122,19 +134,26 @@ class CodigoController extends AulaController
         ]);
     }
 
-    public function update(Request $request, Codigo $codigo): RedirectResponse
+    public function update(Request $request, Codigo $codigo, ParserAst $parser): RedirectResponse
     {
         Gate::authorize('update', $codigo);
         $datos = $this->datos($request);
         $request->validate(['huella' => ['required', 'string', 'size:64', 'regex:/^[a-f0-9]+$/']]);
         $actividadId = isset($datos['id_actividad']) ? (int) $datos['id_actividad'] : null;
-        DB::transaction(function () use ($request, $codigo, $datos, $actividadId) {
+        if (! hash_equals($codigo->huella(), (string) $request->input('huella'))) {
+            throw ValidationException::withMessages(['huella' => 'Este código cambió en otra pestaña. Vuelve a abrirlo antes de guardar.']);
+        }
+        if ($actividadId !== $codigo->id_actividad) {
+            $this->autorizarAsociacion($actividadId);
+        }
+        $traza = $parser->generar($datos['contenido_codigo']);
+        DB::transaction(function () use ($request, $codigo, $datos, $actividadId, $traza) {
             // Orden de bloqueos compartido con ActividadController: actividad, luego código.
             $destino = $actividadId === null ? null
                 : Actividad::query()->lockForUpdate()->findOrFail($actividadId);
             $actual = Codigo::query()->lockForUpdate()->findOrFail($codigo->getKey());
             Gate::authorize('update', $actual);
-            if (!hash_equals($actual->huella(), (string) $request->input('huella'))) {
+            if (! hash_equals($actual->huella(), (string) $request->input('huella'))) {
                 throw ValidationException::withMessages(['huella' => 'Este código cambió en otra pestaña. Copia tus cambios y vuelve a abrirlo antes de guardar.']);
             }
             // Se puede conservar una asociación existente, incluso si ya no es seleccionable.
@@ -143,15 +162,18 @@ class CodigoController extends AulaController
             }
             $actual->fill(Arr::except($datos, ['id_actividad']));
             $actual->id_actividad = $actividadId;
+            $actual->traza_json = $traza;
             $actual->save();
         });
-        return to_route('depurador', ['codigo' => $codigo])->with('aula_status', 'Código actualizado.');
+
+        return to_route('depurador', ['codigo' => $codigo])->with('aula_status', 'Código y traza actualizados.');
     }
 
     public function destroy(Codigo $codigo): RedirectResponse
     {
         Gate::authorize('delete', $codigo);
         $this->eliminarRegistro($codigo, 'No se puede eliminar: otros registros utilizan este código.');
+
         return to_route('aula.codigos.index')->with('aula_status', 'Código eliminado.');
     }
 
@@ -159,9 +181,9 @@ class CodigoController extends AulaController
     {
         return $request->validate([
             'nombre_codigo' => ['required', 'string', 'max:150'],
-            'nombre_archivo' => ['required', 'string', 'max:200'],
-            'formato' => ['required', 'string', 'max:20'],
-            'contenido_codigo' => ['required', 'string', 'max:100000'],
+            'nombre_archivo' => ['required', 'string', 'max:200', 'ends_with:.py'],
+            'formato' => ['required', Rule::in(['py'])],
+            'contenido_codigo' => ['required', 'string', 'max:5000'],
             'id_actividad' => ['present', 'nullable', 'integer', Rule::exists('actividad', 'id_actividad')],
         ]);
     }

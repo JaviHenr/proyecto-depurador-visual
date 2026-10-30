@@ -2,6 +2,7 @@
 import { Link, router, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { useTheme } from '../lib/useTheme';
+import { ajustes } from '../routes';
 
 const props = withDefaults(
     defineProps<{
@@ -28,6 +29,7 @@ const page = usePage<{
 const { isDark } = useTheme();
 
 const currentUser = computed(() => page.props.usuario ?? page.props.auth?.user ?? null);
+const esProfesor = computed(() => (currentUser.value?.rol ?? page.props.actor?.rol) === 'profesor');
 const userName = computed(() => currentUser.value?.nombre_usuario || currentUser.value?.name || page.props.actor?.nombre || 'Profesor de prueba');
 const userRole = computed(() => currentUser.value?.rol || page.props.actor?.rol || 'Profesor');
 const userInitial = computed(() => userName.value.trim().charAt(0).toUpperCase() || 'P');
@@ -46,14 +48,17 @@ const activeTab = computed(() => {
     return 'inicio';
 });
 
-const elementosNav = computed<NavItem[]>(() => [
-    { id: 'inicio', etiqueta: 'Inicio', ruta: '/dashboard', tipoIcono: 'inicio' },
-    { id: 'secciones', etiqueta: 'Secciones', ruta: '/secciones', tipoIcono: 'secciones' },
-    { id: 'actividades', etiqueta: 'Actividades', ruta: '/actividades', tipoIcono: 'actividades' },
-    { id: 'codigos', etiqueta: 'Códigos', ruta: '/codigos', tipoIcono: 'codigos' },
-    { id: 'depurador', etiqueta: 'Depuración', ruta: '/depurador', tipoIcono: 'depurador' },
-    { id: 'ajustes', etiqueta: 'Ajustes', ruta: '/ajustes', tipoIcono: 'ajustes' },
-]);
+const elementosNav = computed<NavItem[]>(() => {
+    const elementos: NavItem[] = [
+        { id: 'inicio', etiqueta: 'Inicio', ruta: '/dashboard', tipoIcono: 'inicio' },
+        { id: 'secciones', etiqueta: 'Secciones', ruta: '/secciones', tipoIcono: 'secciones' },
+        { id: 'actividades', etiqueta: 'Actividades', ruta: '/actividades', tipoIcono: 'actividades' },
+        { id: 'codigos', etiqueta: 'Códigos', ruta: '/codigos', tipoIcono: 'codigos' },
+        { id: 'depurador', etiqueta: 'Depuración', ruta: '/depurador', tipoIcono: 'depurador' },
+        { id: 'ajustes', etiqueta: 'Ajustes', ruta: ajustes.url(), tipoIcono: 'ajustes' },
+    ];
+    return elementos.filter(item => item.id !== 'ajustes' || esProfesor.value);
+});
 
 const navegar = (item: NavItem) => {
     if (item.ruta && page.url !== item.ruta) {
