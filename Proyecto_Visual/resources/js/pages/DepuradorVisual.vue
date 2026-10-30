@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { insertarIndentacion } from '../lib/indentacionCodigo';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { computed, onScopeDispose, ref, watch } from 'vue';
+import { computed, nextTick, onScopeDispose, ref, watch } from 'vue';
 import BarraLateral from '../components/BarraLateral.vue';
 import BotonModoOscuro from '../components/BotonModoOscuro.vue';
 import ControlesEjecucion from '../components/depurador/ControlesEjecucion.vue';
@@ -20,6 +21,7 @@ interface CodigoCargado {
     contenido_codigo: string;
     fecha_creacion_codigo: string;
     huella: string;
+    traza_json: Record<string, unknown> | null;
 }
 
 const props = defineProps<{
@@ -43,15 +45,16 @@ const cerrandoSesion = ref(false);
 const ejemploId = ref(ejemplosDepuracion[0].id);
 const form = useForm({
     nombre_codigo: props.codigo?.nombre_codigo ?? '',
-    nombre_archivo: props.codigo?.nombre_archivo ?? 'Main.java',
-    formato: props.codigo?.formato ?? 'java',
+    nombre_archivo: props.codigo?.nombre_archivo ?? 'programa.py',
+    formato: 'py',
     contenido_codigo: props.codigo?.contenido_codigo ?? '',
     id_actividad: props.codigo?.id_actividad ?? null,
     huella: props.codigo?.huella ?? '',
 });
 
 
-// Archivos del motor: se leen directamente, sin script, metadatos añadidos ni base de datos.
+// Los códigos guardados cargan su traza desde la base de datos.
+// Se conserva la lectura manual de archivos para los ejemplos anteriores.
 interface ArchivoJSON { nombre: string; ruta: string; origen: 'general' | 'codigo' }
 const archivosJSON = ref<ArchivoJSON[]>([]);
 const archivoJSON = ref('');
@@ -89,7 +92,7 @@ const codigoGuardado = computed<EjemploDepuracion>(() => ({
     id: `codigo-${props.codigo?.id_codigo ?? 'nuevo'}`,
     titulo: form.nombre_codigo || 'Código guardado',
     descripcion: usaJSON.value
-        ? 'Recorre las instrucciones y valores entregados por el archivo JSON seleccionado.'
+        ? 'Recorre la traza generada por el Parser-AST y guardada junto a este código.'
         : ejemploCompatible.value
         ? 'Este programa coincide con una traza local disponible. Puedes recorrerla paso a paso.'
         : 'Puedes editar y guardar el programa. Para generar sus pasos automáticamente falta conectar el motor de ejecución.',
@@ -109,9 +112,9 @@ const {
     puedeIniciar, puedeAvanzar, iniciar, pausar, avanzar, retroceder, reiniciar, confirmar,
 } = useDepurador(ejemplo);
 const ejecutados = computed(() => Math.max(0, indice.value + (confirmado.value ? 1 : 0)));
-const estadoVisible = computed(() => !usaJSON.value ? estado.value : cargandoJSON.value ? 'Cargando JSON…' : fuenteSinGuardar.value ? 'Guarda el código y carga su nueva traza' : jsonCompatible.value ? estado.value : 'Selecciona y carga un JSON');
+const estadoVisible = computed(() => form.processing ? 'Guardando código y generando traza…' : !usaJSON.value ? estado.value : cargandoJSON.value ? 'Cargando JSON…' : fuenteSinGuardar.value ? 'Guarda o inicia para generar la nueva traza' : jsonCompatible.value ? estado.value : props.codigo ? 'Guarda o inicia para generar la traza' : 'Selecciona y carga un JSON');
 
-function guardarCodigo() {
+function guardarCodigo(iniciarDespues = false) {
     if (!props.codigo || !props.permisosCodigo.editar || form.processing) return;
     pausar();
     form.put(`/codigos/${props.codigo.id_codigo}`, {
@@ -127,8 +130,36 @@ function guardarCodigo() {
             form.id_actividad = guardado.id_actividad;
             form.huella = guardado.huella;
             form.defaults();
+            cargarTrazaGuardada(guardado);
+            if (iniciarDespues) void nextTick(() => iniciar());
         },
     });
+}
+
+function cargarTrazaGuardada(codigo: CodigoCargado) {
+    ++turnoJSON;
+    solicitudJSON?.abort();
+    cargandoJSON.value = false;
+    trazaJSON.value = null;
+    errorJSON.value = '';
+    jsonActivo.value = true;
+    instruccionesJSON.value = false;
+    if (!codigo.traza_json) return;
+    try {
+        trazaJSON.value = convertirTraza(codigo.traza_json, codigo.contenido_codigo, codigo.nombre_archivo, codigo.nombre_codigo);
+        fuenteAlCargar.value = normalizarFuente(codigo.contenido_codigo);
+        formatoAlCargar.value = codigo.formato;
+    } catch (error) {
+        errorJSON.value = error instanceof Error ? error.message : 'No se pudo leer la traza guardada.';
+    }
+}
+
+const necesitaGenerarTraza = computed(() => !!props.codigo && props.permisosCodigo.editar
+    && !!form.contenido_codigo.trim() && (form.isDirty || !props.codigo.traza_json));
+function iniciarCodigo() {
+    if (form.processing) return;
+    if (necesitaGenerarTraza.value) guardarCodigo(true);
+    else iniciar();
 }
 
 
@@ -221,20 +252,21 @@ watch(archivoJSON, () => {
     errorJSON.value = '';
     if (usaJSON.value) reiniciar();
 }, { flush: 'sync' });
-watch(() => props.codigo?.id_codigo, () => {
+watch(() => JSON.stringify([props.codigo?.id_codigo, props.codigo?.huella, props.codigo?.traza_json]), () => {
     trazaJSON.value = null;
     jsonActivo.value = false;
     archivoJSON.value = '';
     if (props.codigo) {
         form.nombre_codigo = props.codigo.nombre_codigo;
         form.nombre_archivo = props.codigo.nombre_archivo;
-        form.formato = props.codigo.formato;
+        form.formato = 'py';
         form.contenido_codigo = props.codigo.contenido_codigo;
         form.id_actividad = props.codigo.id_actividad;
         form.huella = props.codigo.huella;
         form.defaults();
     }
-    void actualizarArchivos(true);
+    if (props.codigo) cargarTrazaGuardada(props.codigo);
+    else void actualizarArchivos(true);
 }, { immediate: true });
 onScopeDispose(() => { ++turnoJSON; solicitudJSON?.abort(); });
 
@@ -257,7 +289,8 @@ function cerrarSesion() {
                 <div>
                     <Link v-if="codigo" :href="rutas.codigos" class="dv-volver">← Volver a códigos</Link>
                     <h1>{{ codigo ? codigo.nombre_codigo : 'Depuración visual' }}</h1>
-                    <p>{{ codigo ? 'Edita el código y observa su ejecución visual cuando exista una traza compatible.' : 'Sigue el código y descubre cómo cambia la memoria.' }}</p>
+                    <p>{{ codigo ? 'Edita tu programa Python y recorre su traza de ejecución.' : 'Sigue el código y descubre cómo cambia la memoria.' }}</p>
+                    <Link v-if="!codigo" href="/codigos/nuevo" class="dv-volver">Escribir código Python</Link>
                 </div>
                 <div class="dv-acciones-cuenta">
                     <BotonModoOscuro />
@@ -294,7 +327,7 @@ function cerrarSesion() {
             </div>
 
 
-            <section class="dv-seleccion" aria-label="JSON del motor">
+            <section v-if="!codigo" class="dv-seleccion" aria-label="JSON del motor">
                 <div class="dv-ejercicio">
                     <label for="archivo-traza-json">JSON del motor</label>
                     <select id="archivo-traza-json" v-model="archivoJSON" :disabled="cargandoJSON || !archivosJSON.length">
@@ -315,7 +348,7 @@ function cerrarSesion() {
                 </div>
             </section>
 
-            <form v-if="codigo && permisosCodigo.editar" class="dv-panel dv-editor" @submit.prevent="guardarCodigo">
+            <form v-if="codigo && permisosCodigo.editar" class="dv-panel dv-editor" @submit.prevent="guardarCodigo()">
                 <header class="dv-panel-cabecera">
                     <h2>Editor del código</h2>
                     <span class="dv-etiqueta">{{ form.isDirty ? 'Cambios sin guardar' : 'Guardado' }}</span>
@@ -326,21 +359,21 @@ function cerrarSesion() {
                     </div>
                     <div class="dv-campos-editor">
                         <label>Nombre
-                            <input v-model="form.nombre_codigo" required maxlength="150" />
+                            <input :disabled="form.processing" v-model="form.nombre_codigo" required maxlength="150" />
                         </label>
                         <label>Archivo
-                            <input v-model="form.nombre_archivo" required maxlength="200" />
+                            <input :disabled="form.processing" v-model="form.nombre_archivo" required maxlength="200" />
                         </label>
                         <label>Formato
-                            <input v-model="form.formato" required maxlength="20" />
+                            <input :disabled="form.processing" v-model="form.formato" readonly aria-label="Formato Python" />
                         </label>
                     </div>
                     <label class="dv-codigo-label">Código fuente
-                        <textarea v-model="form.contenido_codigo" required maxlength="100000" rows="16" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off" />
+                        <textarea :disabled="form.processing" v-model="form.contenido_codigo" @keydown="insertarIndentacion" required maxlength="5000" rows="16" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off" />
                     </label>
                     <div class="dv-editor-pie">
                         <button type="submit" class="dv-boton dv-primario" :disabled="form.processing || !form.isDirty">
-                            {{ form.processing ? 'Guardando…' : 'Guardar cambios' }}
+                            {{ form.processing ? 'Generando traza…' : 'Guardar cambios' }}
                         </button>
                         <span>{{ form.contenido_codigo.split('\n').length }} líneas · {{ form.contenido_codigo.length }} caracteres</span>
                     </div>
@@ -352,15 +385,17 @@ function cerrarSesion() {
             </div>
 
             <div v-if="codigo && !ejemploCompatible && !usaJSON" class="dv-aviso informacion" role="status">
-                La edición y el guardado ya funcionan. Selecciona el JSON correspondiente en «JSON del motor» para activar el recorrido paso a paso. Puedes seguir usando los ejemplos desde <Link href="/depurador">Depuración visual</Link>.
+                Guarda o inicia este programa Python para generar su traza de ejecución.
             </div>
+
+            <p v-if="codigo && errorJSON" class="dv-aviso error" role="alert">{{ errorJSON }}</p>
 
             <ControlesEjecucion
                 v-model:intervalo="intervalo"
                 :estado="estadoVisible" :indice="indice" :total="ejemplo.pasos.length" :ejecutados="ejecutados"
                 :reproduciendo="reproduciendo" :esperando="esperando"
-                :puede-iniciar="puedeIniciar" :puede-avanzar="puedeAvanzar"
-                @iniciar="iniciar" @pausar="pausar" @retroceder="retroceder" @avanzar="avanzar" @reiniciar="reiniciar"
+                :puede-iniciar="!form.processing && (puedeIniciar || necesitaGenerarTraza)" :puede-avanzar="!form.processing && puedeAvanzar"
+                @iniciar="iniciarCodigo" @pausar="pausar" @retroceder="retroceder" @avanzar="avanzar" @reiniciar="reiniciar"
             />
 
             <div class="dv-columnas">
@@ -380,7 +415,8 @@ function cerrarSesion() {
                 />
             </div>
 
-            <p class="dv-nota">{{ usaJSON ? 'El recorrido sigue las instrucciones del JSON seleccionado. El archivo se lee desde la carpeta externa y tus predicciones no se guardan.' : codigo ? 'El código se guarda en la base de datos. Puedes cargar su JSON desde el selector o recorrer un ejemplo local compatible.' : 'Ejemplos de práctica con ejecución local. Puedes reiniciarlos las veces que necesites; tus respuestas no se guardan.' }}</p>
+            <p v-if="codigo" class="dv-nota">El código Python y su traza se guardan juntos en tu cuenta. Al modificar la fuente, guarda o inicia para regenerar los pasos.</p>
+            <p v-else class="dv-nota">{{ usaJSON ? 'El recorrido sigue las instrucciones del JSON seleccionado. El archivo se lee desde la carpeta externa y tus predicciones no se guardan.' : codigo ? 'El código se guarda en la base de datos. Puedes cargar su JSON desde el selector o recorrer un ejemplo local compatible.' : 'Ejemplos de práctica con ejecución local. Puedes reiniciarlos las veces que necesites; tus respuestas no se guardan.' }}</p>
         </main>
     </div>
 </template>

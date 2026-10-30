@@ -1,9 +1,15 @@
 <script setup lang="ts">
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import BarraLateral from '../components/BarraLateral.vue';
 import BotonModoOscuro from '../components/BotonModoOscuro.vue';
 import { useTheme } from '../lib/useTheme';
+import GestionUsuarios from '../components/ajustes/GestionUsuarios.vue';
+import { edit } from '../routes/ajustes/usuarios';
+import type { Pagina } from '../types/aula';
+import type { UsuarioResumen } from '../types/usuarios';
+
+defineProps<{ usuarios: Pagina<UsuarioResumen>; filtros: { q: string }; perfilId: number }>();
 
 const page = usePage<{
     auth?: { user?: { nombre_usuario?: string; name?: string; email?: string; rol?: string } };
@@ -58,6 +64,8 @@ function seleccionarTema(modo: 'claro' | 'oscuro') {
                     </button>
                 </div>
             </header>
+
+            <GestionUsuarios :usuarios="usuarios" :filtros="filtros" />
 
             <!-- Sección: Tema y Apariencia -->
             <section class="ajustes-seccion">
@@ -154,6 +162,7 @@ function seleccionarTema(modo: 'claro' | 'oscuro') {
                         <h3 class="perfil-nombre">{{ userName }}</h3>
                         <p class="text-xs text-[#85768F] dark:text-[#8E89A8] mt-0.5">{{ userEmail }}</p>
                         <span class="perfil-rol">{{ userRole }}</span>
+                        <p class="mt-3"><Link :href="edit.url(perfilId)" class="text-sm font-semibold text-[#7455ef] dark:text-[#baabff]">Editar mis datos</Link></p>
                     </div>
                 </div>
             </section>

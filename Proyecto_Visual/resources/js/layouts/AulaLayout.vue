@@ -4,7 +4,7 @@ import { computed } from 'vue';
 import BarraLateral from '../components/BarraLateral.vue';
 import BotonModoOscuro from '../components/BotonModoOscuro.vue';
 
-defineProps<{ titulo: string; descripcion?: string; activo: 'secciones' | 'codigos' }>();
+defineProps<{ titulo: string; descripcion?: string; activo: 'secciones' | 'codigos' | 'ajustes' }>();
 const page = usePage<{
     actor?: { id: number; nombre: string; rol: string };
     auth?: { user?: { nombre_usuario?: string; name?: string; rol?: string } };

@@ -3,18 +3,23 @@
 namespace App\Models\Aula;
 
 use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Database\Eloquent\{Builder, Model};
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Codigo extends Model
 {
     protected $table = 'codigo';
+
     protected $primaryKey = 'id_codigo';
+
     public $timestamps = false;
+
     protected $fillable = ['nombre_codigo', 'nombre_archivo', 'formato', 'contenido_codigo'];
+
     protected $casts = [
         'id_codigo' => 'integer', 'id_usuario' => 'integer', 'id_actividad' => 'integer',
-        'fecha_creacion_codigo' => 'date:Y-m-d',
+        'fecha_creacion_codigo' => 'date:Y-m-d', 'traza_json' => 'array',
     ];
 
     public function actividad(): BelongsTo

@@ -13,6 +13,11 @@ return [
     |
     */
 
+    'parser_ast' => [
+        'url' => env('PARSER_AST_URL', 'https://parser.rodofer.cl/traza'),
+        'timeout' => (int) env('PARSER_AST_TIMEOUT', 30),
+    ],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],

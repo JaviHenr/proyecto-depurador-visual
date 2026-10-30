@@ -2,10 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Models\Aula\{Actividad, Codigo, Seccion};
+use App\Models\Aula\Actividad;
+use App\Models\Aula\Codigo;
+use App\Models\Aula\Seccion;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -20,6 +23,7 @@ class AulaCrudTest extends TestCase
     {
         parent::setUp();
         $this->withoutVite();
+        config(['inertia.ssr.enabled' => false]);
     }
 
     private function usuario(string $rol): Authenticatable
@@ -35,6 +39,7 @@ class AulaCrudTest extends TestCase
             'rol' => $rol,
             'contrasena' => Hash::make('SoloParaPruebas123!'),
         ])->save();
+
         return $usuario;
     }
 
@@ -43,6 +48,7 @@ class AulaCrudTest extends TestCase
         $seccion = new Seccion(['nombre_seccion' => 'Programación I', 'descripcion_seccion' => 'Prueba']);
         $seccion->id_usuario = $profesor->getAuthIdentifier();
         $seccion->save();
+
         return $seccion;
     }
 
@@ -52,6 +58,7 @@ class AulaCrudTest extends TestCase
         $actividad->fecha_creacion_actividad = now();
         $actividad->save();
         $seccion->actividades()->attach($actividad->getKey());
+
         return $actividad;
     }
 
@@ -63,9 +70,31 @@ class AulaCrudTest extends TestCase
     private function datosCodigo(?int $actividadId = null): array
     {
         return [
-            'nombre_codigo' => 'Mi programa', 'nombre_archivo' => 'Main.java', 'formato' => 'java',
-            'contenido_codigo' => "  public class Main {\n}\n\n", 'id_actividad' => $actividadId,
+            'nombre_codigo' => 'Mi programa', 'nombre_archivo' => 'programa.py', 'formato' => 'py',
+            'contenido_codigo' => "numero = 1\n\n", 'id_actividad' => $actividadId,
         ];
+    }
+
+    /** @param list<int> $valores */
+    private function simularParser(array $valores): void
+    {
+        Http::preventStrayRequests();
+        $secuencia = Http::sequence();
+        foreach ($valores as $valor) {
+            $secuencia->push([
+                '@context' => 'https://example.org/ontologia.jsonld',
+                'versionFormato' => '1.0',
+                '@graph' => [[
+                    '@type' => 'PasoDeEjecucion', 'numeroPaso' => 1, 'linea' => 1,
+                    'bloque' => null, 'iteracion' => null, 'instruccion' => 'numero = '.$valor,
+                    'modifica' => [
+                        '@type' => 'EstadoDeMemoria', 'variable' => 'numero', 'ambito' => 'global',
+                        'valorAnterior' => null, 'valorNuevo' => $valor,
+                    ],
+                ]],
+            ]);
+        }
+        Http::fake([config('services.parser_ast.url') => $secuencia]);
     }
 
     public function test_seccion_usa_la_clave_real_y_el_profesor_de_la_sesion(): void
@@ -149,6 +178,7 @@ class AulaCrudTest extends TestCase
 
     public function test_codigo_es_privado_y_detecta_edicion_desactualizada_sin_columna_version(): void
     {
+        $this->simularParser([1, 2]);
         $autor = $this->usuario('estudiante');
         $otro = $this->usuario('estudiante');
         $datos = $this->datosCodigo();
@@ -162,10 +192,10 @@ class AulaCrudTest extends TestCase
         $this->get('/depurador/'.$codigo->id_codigo)->assertInertia(fn (Assert $page) => $page
             ->component('DepuradorVisual')->where('codigo.huella', $huella)
             ->where('permisosCodigo.editar', true));
-        $nuevos = array_replace($datos, ['contenido_codigo' => 'public class Editado {}', 'huella' => $huella]);
+        $nuevos = array_replace($datos, ['contenido_codigo' => 'numero = 2', 'huella' => $huella]);
         $this->put($url, $nuevos)->assertRedirect();
         $this->put($url, $datos + ['huella' => $huella])->assertSessionHasErrors('huella');
-        $this->assertSame('public class Editado {}', $codigo->fresh()->contenido_codigo);
+        $this->assertSame('numero = 2', $codigo->fresh()->contenido_codigo);
         $this->actingAs($otro)->get($url.'/editar')->assertForbidden();
         $this->get('/depurador/'.$codigo->id_codigo)->assertForbidden();
         $this->put($url, $nuevos)->assertForbidden();
@@ -173,10 +203,12 @@ class AulaCrudTest extends TestCase
         $this->get('/codigos')->assertInertia(fn (Assert $page) => $page->has('codigos.data', 0));
         $this->actingAs($autor)->delete($url)->assertRedirect('/codigos');
         $this->assertDatabaseMissing('codigo', ['id_codigo' => $codigo->id_codigo]);
+        Http::assertSentCount(2);
     }
 
     public function test_borrado_respetando_codigos_y_claves_foraneas(): void
     {
+        $this->simularParser([1, 1]);
         $profesor = $this->usuario('profesor');
         $seccion = $this->seccion($profesor);
         $actividad = $this->actividad($seccion);
@@ -191,6 +223,7 @@ class AulaCrudTest extends TestCase
         $this->delete($url.'/actividades/'.$actividad->id_actividad)->assertRedirect();
         $this->delete($url)->assertRedirect('/secciones');
         $this->assertDatabaseHas('codigo', ['id_codigo' => $codigo->id_codigo]);
+        Http::assertSentCount(2);
     }
 
     public function test_actividad_compartida_es_lectura_y_se_puede_retirar_su_vinculo(): void
@@ -213,6 +246,7 @@ class AulaCrudTest extends TestCase
 
     public function test_matricula_habilita_acceso_y_el_profesor_la_administra(): void
     {
+        $this->simularParser([1, 1, 1, 1]);
         $profesor = $this->usuario('profesor');
         $seccion = $this->seccion($profesor);
         $actividad = $this->actividad($seccion);
@@ -288,6 +322,7 @@ class AulaCrudTest extends TestCase
         $this->put($url, $this->datosCodigo($actividad->id_actividad) + ['huella' => $codigo->fresh()->huella()])->assertRedirect();
         $this->put($url, $this->datosCodigo() + ['huella' => $codigo->fresh()->huella()])->assertRedirect();
         $this->assertNull($codigo->fresh()->id_actividad);
+        Http::assertSentCount(4);
     }
 
     public function test_limites_coinciden_con_los_varchar_de_la_base(): void

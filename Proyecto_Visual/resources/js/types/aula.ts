@@ -54,5 +54,6 @@ export interface CodigoResumen {
 
 export interface Codigo extends CodigoResumen {
     contenido_codigo: string | null;
+    traza_json: Record<string, unknown> | null;
     huella: string; // Calculada por el servidor; no existe como columna.
 }
