@@ -24,7 +24,7 @@ class ParserAst
         }
 
         if (! $respuesta->successful()) {
-            $detalle = $respuesta->json('detail');
+            $detalle = $respuesta->json('detail.mensaje');
             throw ValidationException::withMessages([
                 'contenido_codigo' => $respuesta->status() === 422
                     ? 'El Parser-AST rechazó el programa Python. '.(is_string($detalle) ? mb_substr($detalle, 0, 500) : 'Revisa la sintaxis y las instrucciones admitidas.')

@@ -106,12 +106,17 @@ it('conserva fuente y traza anteriores si el parser falla', function (int $estad
     Http::preventStrayRequests();
     $usuario = UsuarioParserFactory::new()->estudiante()->create();
     $codigo = codigoParser($usuario->getKey());
-    Http::fake([config('services.parser_ast.url') => Http::response(['detail' => 'Error de prueba'], $estado)]);
+    Http::fake([config('services.parser_ast.url') => Http::response([
+        'detail' => ['tipo' => 'NodoNoPermitido', 'mensaje' => 'El nodo For (línea 2) no está permitido.'],
+    ], $estado)]);
 
-    $this->actingAs($usuario)->putJson('/codigos/'.$codigo->getKey(), array_replace(datosParser(), [
+    $respuesta = $this->actingAs($usuario)->putJson('/codigos/'.$codigo->getKey(), array_replace(datosParser(), [
         'contenido_codigo' => 'contador = 9', 'huella' => $codigo->huella(),
     ]))->assertUnprocessable()->assertJsonValidationErrors('contenido_codigo');
 
+    if ($estado === 422) {
+        expect($respuesta->json('errors.contenido_codigo.0'))->toContain('El nodo For (línea 2) no está permitido.');
+    }
     expect($codigo->fresh()->contenido_codigo)->toBe(fuenteParser());
     expect($codigo->fresh()->traza_json)->toBe(trazaParser());
     Http::assertSentCount(1);
