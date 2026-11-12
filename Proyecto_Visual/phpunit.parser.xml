@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit bootstrap="vendor/autoload.php" colors="true">
     <testsuites>
-        <testsuite name="ParserAst">
+        <testsuite name="ParserAstYMotorSemantico">
             <directory suffix="ParserAstTest.php">tests/Feature</directory>
+            <file>tests/Feature/MotorSemanticoTest.php</file>
         </testsuite>
     </testsuites>
     <php>

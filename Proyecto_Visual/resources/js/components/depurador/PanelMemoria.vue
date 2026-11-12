@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
 import type { Memoria, PasoTraza, EscalarMemoria, ValorMemoria } from '../../lib/ejemplosDepuracion';
+import type { FeedbackPaso } from '../../composables/useDepurador';
 import { mostrarValor, valoresIguales } from '../../lib/trazaSemantica';
 
 const props = defineProps<{
@@ -11,14 +12,17 @@ const props = defineProps<{
     esperando: boolean;
     confirmado: boolean;
     respuesta: string;
-    feedback: { tipo: 'error' | 'correcto'; texto: string } | null;
+    feedback: FeedbackPaso | null;
+    validando: boolean;
 }>();
 defineEmits<{ confirmar: []; 'update:respuesta': [valor: string] }>();
 const campo = ref<HTMLInputElement | null>(null);
 const guardarCampo = (elemento: unknown) => { campo.value = elemento as HTMLInputElement | null; };
+const variablePendiente = computed(() => props.esperando && props.paso?.reto?.tipo === 'variable' ? props.paso.reto.variable : null);
+const condicionPendiente = computed(() => props.esperando && props.paso?.reto?.tipo === 'condicion' ? props.paso.reto : null);
 const escalares = computed(() => {
     const nombres = Object.keys(props.memoria).filter(nombre => !Array.isArray(props.memoria[nombre]));
-    const pendiente = props.esperando ? props.paso?.reto?.variable : null;
+    const pendiente = variablePendiente.value;
     if (pendiente && !nombres.includes(pendiente)) nombres.push(pendiente);
     return nombres;
 });
@@ -45,25 +49,37 @@ watch(() => [props.indice, props.esperando], async () => {
             <span class="simbolo" aria-hidden="true">{ }</span>
             <h3>Ve el código por dentro</h3>
             <p>Inicia o avanza un paso para descubrir cómo cambian las variables.</p>
-            <span class="nota-vacio">En modo Predecir, completarás el nuevo valor antes de continuar.</span>
+            <span class="nota-vacio">En modo Predecir, responderás sobre los valores y las condiciones antes de continuar.</span>
         </div>
 
         <div v-else class="cuerpo-memoria">
             <div class="paso-cabecera">
                 <span class="rotulo">{{ esperando ? 'Antes de ejecutar la línea' : 'Después de ejecutar la línea' }} {{ paso.linea }}</span>
                 <h3>{{ paso.titulo }}</h3>
-                <p v-if="esperando">¿Qué valor tendrá <code>{{ paso.reto?.variable }}</code> después de esta instrucción?</p>
+                <p v-if="condicionPendiente">¿La condición <code>{{ condicionPendiente.expresion }}</code> es verdadera o falsa?</p>
+                <p v-else-if="variablePendiente">¿Qué valor tendrá <code>{{ variablePendiente }}</code> después de esta instrucción?</p>
                 <p v-else>{{ paso.explicacion }}</p>
             </div>
 
-            <form @submit.prevent="$emit('confirmar')">
+            <form :aria-busy="validando" @submit.prevent="$emit('confirmar')">
+                <fieldset v-if="condicionPendiente" class="condicion-pregunta" :disabled="validando" aria-describedby="pista-paso">
+                    <legend>Resultado de la condición</legend>
+                    <label>
+                        <input :ref="guardarCampo" type="radio" name="resultado-condicion" value="true" :checked="respuesta === 'true'" @change="$emit('update:respuesta', 'true')" />
+                        Verdadero
+                    </label>
+                    <label>
+                        <input type="radio" name="resultado-condicion" value="false" :checked="respuesta === 'false'" @change="$emit('update:respuesta', 'false')" />
+                        Falso
+                    </label>
+                </fieldset>
                 <div class="variables">
-                    <div v-for="nombre in escalares" :key="nombre" class="variable" :class="{ cambio: cambio(nombre), pregunta: esperando && paso.reto?.variable === nombre }">
-                        <label v-if="esperando && paso.reto?.variable === nombre" :for="`valor-${nombre}`"><code>{{ nombre }}</code> <span>=</span></label>
+                    <div v-for="nombre in escalares" :key="nombre" class="variable" :class="{ cambio: cambio(nombre), pregunta: variablePendiente === nombre }">
+                        <label v-if="variablePendiente === nombre" :for="`valor-${nombre}`"><code>{{ nombre }}</code> <span>=</span></label>
                         <div v-else class="nombre-variable"><code>{{ nombre }}</code><span class="tipo">{{ tipoValor(memoria[nombre]) }}</span></div>
 
-                        <template v-if="esperando && paso.reto?.variable === nombre">
-                            <input :id="`valor-${nombre}`" :ref="guardarCampo" :value="respuesta" type="text" :inputmode="typeof paso.memoria[nombre] === 'number' ? 'decimal' : 'text'" autocomplete="off" spellcheck="false" placeholder="?" :aria-invalid="feedback?.tipo === 'error'" :aria-describedby="feedback?.tipo === 'error' ? 'pista-paso feedback-paso' : 'pista-paso'" @input="$emit('update:respuesta', ($event.target as HTMLInputElement).value)" />
+                        <template v-if="variablePendiente === nombre">
+                            <input :id="`valor-${nombre}`" :ref="guardarCampo" :value="respuesta" type="text" inputmode="text" maxlength="17" :disabled="validando" autocomplete="off" spellcheck="false" placeholder="?" :aria-invalid="feedback?.tipo === 'error'" :aria-describedby="feedback?.tipo === 'error' ? 'pista-paso feedback-paso' : 'pista-paso'" @input="$emit('update:respuesta', ($event.target as HTMLInputElement).value)" />
                             <p class="anterior">Paso previo: {{ nombre }} = {{ valorAnterior(nombre) }}</p>
                         </template>
                         <template v-else>
@@ -75,9 +91,11 @@ watch(() => [props.indice, props.esperando], async () => {
 
                 <template v-if="esperando">
                     <p id="pista-paso" class="pista">{{ paso.reto?.pista }}</p>
-                    <button type="submit" class="dv-boton dv-primario confirmar">Confirmar paso</button>
+                    <button type="submit" class="dv-boton dv-primario confirmar" :disabled="validando">{{ validando ? 'Validando…' : 'Confirmar paso' }}</button>
                 </template>
-                <p v-if="feedback" id="feedback-paso" class="feedback" :class="feedback.tipo" :role="feedback.tipo === 'error' ? 'alert' : 'status'">{{ feedback.texto }}</p>
+                <p v-if="feedback" id="feedback-paso" class="feedback" :class="feedback.tipo" :role="feedback.tipo === 'error' ? 'alert' : 'status'">{{ feedback.texto }}
+                    <span v-if="feedback.valorEsperado !== undefined" class="esperado">Respuesta esperada: {{ typeof feedback.valorEsperado === 'boolean' ? (feedback.valorEsperado ? 'Verdadero' : 'Falso') : feedback.valorEsperado }}.</span>
+                </p>
             </form>
 
             <section v-for="[nombre, valores] in arreglos" :key="nombre" class="arreglo" :aria-label="`Arreglo ${nombre}`">
@@ -90,7 +108,7 @@ watch(() => [props.indice, props.esperando], async () => {
                 <p v-if="paso.acceso?.arreglo === nombre" class="pista">Elemento consultado: {{ nombre }}[{{ paso.acceso.indice }}]</p>
             </section>
 
-            <div v-if="paso.ciclo" class="ciclo">
+            <div v-if="paso.ciclo && !esperando" class="ciclo">
                 <span>Ciclo <code>{{ paso.ciclo.tipo }}</code> · Iteración {{ paso.ciclo.iteracion }}</span>
                 <div><span>Última condición</span><code>{{ paso.ciclo.condicion }}</code><strong :class="{ falsa: !paso.ciclo.resultado }">{{ paso.ciclo.resultado ? 'Verdadera' : 'Falsa' }}</strong></div>
             </div>
@@ -126,6 +144,12 @@ watch(() => [props.indice, props.esperando], async () => {
 .variable input::placeholder { color: #b4a0c2; }
 .anterior { display: block; margin-top: 9px; color: #9885a6; font-size: 11px; font-style: italic; }
 .pista { margin-top: 12px; color: #9787a1; font-size: 12px; line-height: 1.6; }
+.condicion-pregunta { display: flex; gap: 16px; flex-wrap: wrap; margin: 0 0 16px; padding: 12px 16px; border: 1px solid #d9c5f7; border-radius: 12px; }
+.condicion-pregunta legend { padding: 0 5px; font-weight: 600; }
+.condicion-pregunta label { display: inline-flex; align-items: center; gap: 6px; }
+.condicion-pregunta input { accent-color: #7455ef; }
+html.dark .condicion-pregunta { border-color: #524174; color: #e4dcf3; }
+.esperado { display: block; margin-top: 6px; font-weight: 600; }
 .confirmar { width: 100%; margin-top: 18px; }
 .feedback { margin-top: 14px; padding: 12px; border-radius: 10px; font-size: 12px; }
 .feedback.error { background: #fff0f1; color: #a54b5c; }

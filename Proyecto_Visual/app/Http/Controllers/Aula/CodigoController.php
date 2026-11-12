@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Aula;
 
+use App\Http\MotorSemantico;
 use App\Http\ParserAst;
 use App\Models\Aula\Actividad;
 use App\Models\Aula\Codigo;
@@ -122,7 +123,10 @@ class CodigoController extends AulaController
             'codigo' => $codigo ? $codigo->only([
                 'id_codigo', 'id_actividad', 'id_usuario', 'nombre_codigo', 'nombre_archivo',
                 'formato', 'contenido_codigo', 'fecha_creacion_codigo', 'traza_json',
-            ]) + ['huella' => $codigo->huella()] : null,
+            ]) + [
+                'huella' => $codigo->huella(),
+                'huella_traza' => is_array($codigo->traza_json) ? MotorSemantico::huellaTraza($codigo->traza_json) : null,
+            ] : null,
             'autorCodigo' => $codigo ? [
                 'nombre' => $codigo->autor?->nombre_usuario ?? 'Usuario',
                 'email' => $codigo->autor?->email,
