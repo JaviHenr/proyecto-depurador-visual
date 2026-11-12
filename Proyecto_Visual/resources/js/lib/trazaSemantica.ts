@@ -32,6 +32,7 @@ const copiarMemoria = (memoria: Memoria): Memoria => Object.fromEntries(Object.e
 export function convertirTraza(documento: unknown, fuente: string, archivo = 'contador_suma.py', titulo = 'Contador y suma'): EjemploDepuracion {
     if (!objeto(documento) || !Array.isArray(documento['@graph']) || !documento['@graph'].length || documento['@graph'].length > 5000) fallo('La traza debe tener @graph con entre 1 y 5000 pasos.');
     if (documento.versionFormato !== undefined && (typeof documento.versionFormato !== 'string' || !/^1\.\d+$/.test(documento.versionFormato))) fallo('Versión de traza no compatible.');
+    const puedeValidar = documento.versionFormato === '1.0';
     const eventos = [...documento['@graph']];
     for (const evento of eventos) {
         if (!objeto(evento) || evento['@type'] !== 'PasoDeEjecucion' || !Number.isInteger(evento.numeroPaso)) fallo('Cada evento debe ser PasoDeEjecucion con numeroPaso entero.');
@@ -65,8 +66,9 @@ export function convertirTraza(documento: unknown, fuente: string, archivo = 'co
             memoria = { ...memoria, [nombre]: copiarValor(cambio.valorNuevo) };
             if (cambio.ambito !== undefined) paso.ambito = texto(cambio.ambito, 'ambito');
             explicaciones.push(existia ? `${nombre}: ${mostrarValor(cambio.valorAnterior)} → ${mostrarValor(cambio.valorNuevo)}.` : `${nombre} se inicializa con ${mostrarValor(cambio.valorNuevo)}.`);
-            // Las modificaciones escalares admiten predicción. Los arreglos se muestran directamente.
-            if (!Array.isArray(cambio.valorNuevo)) paso.reto = { variable: nombre, pista: 'Usa el valor anterior y la instrucción resaltada para predecir el nuevo valor.' };
+            if (puedeValidar && typeof cambio.valorNuevo === 'number' && Number.isSafeInteger(cambio.valorNuevo)) {
+                paso.reto = { tipo: 'variable', variable: nombre, pista: 'Usa el valor anterior y la instrucción resaltada para predecir el nuevo valor.' };
+            }
         }
         if (propio(evento, 'evalua')) {
             accion = true;
@@ -80,6 +82,9 @@ export function convertirTraza(documento: unknown, fuente: string, archivo = 'co
             const dependeDe = dependencias.map(variable);
             if (dependeDe.some(nombre => !Object.hasOwn(memoria, nombre))) fallo('La condición usa una variable no declarada.');
             paso.condicion = { expresion, resultado, dependeDe };
+            if (puedeValidar && !propio(evento, 'modifica')) {
+                paso.reto = { tipo: 'condicion', expresion, pista: 'Evalúa la condición con los valores actuales de las variables.' };
+            }
             explicaciones.push(`La condición ${expresion} es ${resultado ? 'verdadera' : 'falsa'}.`);
         }
         if (propio(evento, 'salida')) {

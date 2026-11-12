@@ -18,6 +18,11 @@ return [
         'timeout' => (int) env('PARSER_AST_TIMEOUT', 30),
     ],
 
+    'motor_semantico' => [
+        'url' => env('MOTOR_SEMANTICO_URL', 'https://motor.rodofer.cl/validar'),
+        'timeout' => (int) env('MOTOR_SEMANTICO_TIMEOUT', 10),
+    ],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],

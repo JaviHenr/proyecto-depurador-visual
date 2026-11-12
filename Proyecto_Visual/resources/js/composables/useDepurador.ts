@@ -1,16 +1,29 @@
 import { computed, onScopeDispose, ref, watch, type Ref } from 'vue';
 import type { EjemploDepuracion, Memoria } from '../lib/ejemplosDepuracion';
-import { valoresIguales } from '../lib/trazaSemantica';
+import type { ValidarPaso } from '../lib/motorSemantico';
 
-export function useDepurador(ejemplo: Ref<EjemploDepuracion>) {
+export interface FeedbackPaso {
+    tipo: 'error' | 'correcto';
+    texto: string;
+    valorEsperado?: number | boolean;
+}
+
+export function useDepurador(ejemplo: Ref<EjemploDepuracion>, validar: ValidarPaso) {
     const indice = ref(-1);
     const confirmado = ref(false);
     const reproduciendo = ref(false);
-    const modo = ref<'predecir' | 'observar'>('predecir');
+    const preferencia = ref<'predecir' | 'observar'>('predecir');
+    const puedePredecir = computed(() => !!ejemplo.value.referenciaTraza && ejemplo.value.pasos.some(paso => !!paso.reto));
+    const modo = computed({
+        get: () => puedePredecir.value ? preferencia.value : 'observar' as const,
+        set: (valor: 'predecir' | 'observar') => { preferencia.value = valor; },
+    });
     const intervalo = ref(1400);
     const respuesta = ref('');
-    const feedback = ref<{ tipo: 'error' | 'correcto'; texto: string } | null>(null);
+    const feedback = ref<FeedbackPaso | null>(null);
+    const validando = ref(false);
     let temporizador: ReturnType<typeof setTimeout> | undefined;
+    let solicitud: AbortController | null = null;
 
     const paso = computed(() => ejemplo.value.pasos[indice.value] ?? null);
     const anterior = computed<Memoria>(() => ejemplo.value.pasos[indice.value - 1]?.memoria ?? {});
@@ -18,7 +31,7 @@ export function useDepurador(ejemplo: Ref<EjemploDepuracion>) {
     const salida = computed(() => (confirmado.value ? paso.value?.salida : ejemplo.value.pasos[indice.value - 1]?.salida) ?? []);
     const esperando = computed(() => !!paso.value?.reto && modo.value === 'predecir' && !confirmado.value);
     const terminado = computed(() => ejemplo.value.pasos.length > 0 && indice.value === ejemplo.value.pasos.length - 1 && confirmado.value);
-    const estado = computed(() => terminado.value ? 'Finalizado' : esperando.value ? 'Esperando tu respuesta' : reproduciendo.value ? 'En ejecución' : indice.value < 0 ? 'Listo para iniciar' : 'En pausa');
+    const estado = computed(() => validando.value ? 'Validando respuesta…' : terminado.value ? 'Finalizado' : esperando.value ? 'Esperando tu respuesta' : reproduciendo.value ? 'En ejecución' : indice.value < 0 ? 'Listo para iniciar' : 'En pausa');
     const puedeIniciar = computed(() => ejemplo.value.pasos.length > 0 && !reproduciendo.value && !esperando.value && !terminado.value);
     const puedeAvanzar = computed(() => ejemplo.value.pasos.length > 0 && !esperando.value && !terminado.value);
 
@@ -32,7 +45,14 @@ export function useDepurador(ejemplo: Ref<EjemploDepuracion>) {
         reproduciendo.value = false;
     }
 
+    function cancelarValidacion() {
+        solicitud?.abort();
+        solicitud = null;
+        validando.value = false;
+    }
+
     function limpiarRespuesta() {
+        cancelarValidacion();
         respuesta.value = '';
         feedback.value = null;
     }
@@ -40,7 +60,6 @@ export function useDepurador(ejemplo: Ref<EjemploDepuracion>) {
     function entrarAlPaso(nuevoIndice: number, recordar = false) {
         indice.value = nuevoIndice;
         limpiarRespuesta();
-        // Al retroceder se recupera el estado que ya se había alcanzado.
         confirmado.value = recordar || modo.value === 'observar' || !paso.value?.reto;
         if (esperando.value || terminado.value) pausar();
     }
@@ -83,52 +102,70 @@ export function useDepurador(ejemplo: Ref<EjemploDepuracion>) {
         limpiarRespuesta();
     }
 
-    function confirmar() {
-        if (!esperando.value || !paso.value?.reto) return;
+    async function confirmar() {
+        const actual = paso.value;
+        const traza = ejemplo.value.referenciaTraza;
+        if (!esperando.value || validando.value || !traza || !actual?.reto || actual.numeroPaso === undefined) return;
+
         const texto = respuesta.value.trim();
-        const esperado = paso.value.memoria[paso.value.reto.variable];
-        let valor: unknown;
-        try {
-            if (typeof esperado === 'number') {
-                if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(texto)) throw new Error();
-                valor = Number(texto);
-                if (!Number.isFinite(valor) || (Number.isInteger(esperado) && !Number.isSafeInteger(valor))) throw new Error();
-            } else if (typeof esperado === 'boolean') {
-                const booleanos: Record<string, boolean> = { true: true, false: false, verdadero: true, falso: false };
-                if (!Object.hasOwn(booleanos, texto.toLowerCase())) throw new Error();
-                valor = booleanos[texto.toLowerCase()];
-            } else if (esperado === null) {
-                if (!['null', 'none'].includes(texto.toLowerCase())) throw new Error();
-                valor = null;
-            } else {
-                if (!texto) throw new Error();
-                valor = texto.startsWith('"') ? JSON.parse(texto) : texto;
+        let valor: number | boolean;
+        if (actual.reto.tipo === 'condicion') {
+            if (texto !== 'true' && texto !== 'false') {
+                feedback.value = { tipo: 'error', texto: 'Selecciona verdadero o falso.' };
+                return;
             }
-        } catch {
-            feedback.value = { tipo: 'error', texto: typeof esperado === 'number' ? 'Escribe un número válido para confirmar el paso.' : 'Escribe un valor válido: texto, true/false o null, según la variable.' };
-            return;
+            valor = texto === 'true';
+        } else {
+            valor = Number(texto);
+            if (!/^[+-]?\d+$/.test(texto) || !Number.isSafeInteger(valor)) {
+                feedback.value = { tipo: 'error', texto: 'Escribe un número entero válido.' };
+                return;
+            }
         }
-        if (!valoresIguales(valor, esperado)) {
-            feedback.value = { tipo: 'error', texto: 'Todavía no coincide. Revisa el valor anterior y la operación resaltada.' };
-            return;
+
+        const control = new AbortController();
+        solicitud = control;
+        validando.value = true;
+        feedback.value = null;
+        try {
+            const resultado = await validar(traza, actual.numeroPaso, valor, control.signal);
+            if (solicitud !== control) return;
+            confirmado.value = resultado.correcto;
+            feedback.value = {
+                tipo: resultado.correcto ? 'correcto' : 'error',
+                texto: resultado.mensaje,
+                valorEsperado: resultado.valorEsperado,
+            };
+        } catch (error) {
+            if (solicitud !== control) return;
+            feedback.value = {
+                tipo: 'error',
+                texto: error instanceof Error && !(error instanceof TypeError)
+                    ? error.message : 'No se pudo validar la respuesta. Vuelve a confirmar el paso.',
+            };
+        } finally {
+            if (solicitud === control) {
+                solicitud = null;
+                validando.value = false;
+            }
         }
-        confirmado.value = true;
-        feedback.value = { tipo: 'correcto', texto: '¡Correcto! La memoria se ha actualizado. Puedes avanzar o reanudar.' };
-        // La confirmación conserva el resultado visible; nunca avanza por sorpresa.
-        pausar();
     }
 
     watch(ejemplo, reiniciar, { flush: 'sync' });
-    watch(modo, () => {
-        pausar();
-        limpiarRespuesta();
-        if (modo.value === 'observar' && paso.value) confirmado.value = true;
+    watch(modo, valor => {
+        if (valor === 'predecir') {
+            reiniciar();
+        } else {
+            pausar();
+            limpiarRespuesta();
+            if (paso.value) confirmado.value = true;
+        }
     }, { flush: 'sync' });
     watch(intervalo, () => { if (reproduciendo.value) programar(); }, { flush: 'sync' });
-    onScopeDispose(pausar);
+    onScopeDispose(() => { pausar(); cancelarValidacion(); });
 
     return {
-        indice, confirmado, reproduciendo, modo, intervalo, respuesta, feedback,
+        indice, confirmado, reproduciendo, modo, puedePredecir, intervalo, respuesta, feedback, validando,
         paso, anterior, memoria, salida, esperando, terminado, estado,
         puedeIniciar, puedeAvanzar, iniciar, pausar, avanzar, retroceder, reiniciar, confirmar,
     };

@@ -1,7 +1,9 @@
+import type { ReferenciaTraza } from './motorSemantico';
+
 /*
  * Trazas de dos programas concretos. No analizan ni ejecutan código Java libre.
  * Cada paso contiene una copia independiente de la memoria DESPUÉS de la línea.
- * El motor real podrá entregar este mismo contrato junto a su código fuente.
+ * Estas demostraciones se recorren en modo Observar.
  */
 export type EscalarMemoria = number | string | boolean | null;
 export type ValorMemoria = EscalarMemoria | EscalarMemoria[];
@@ -14,7 +16,7 @@ export interface PasoTraza {
     explicacion: string; // Mostrar solo después de confirmar el paso.
     memoria: Memoria;
     salida: string[];
-    reto?: { variable: string; pista: string };
+    reto?: { tipo: 'variable'; variable: string; pista: string } | { tipo: 'condicion'; expresion: string; pista: string };
     ciclo?: { tipo: 'while' | 'for'; iteracion: number; condicion: string; resultado: boolean };
     acceso?: { arreglo: string; indice: number };
     condicion?: { expresion: string; resultado: boolean; dependeDe: string[] };
@@ -29,6 +31,7 @@ export interface EjemploDepuracion {
     archivo: string;
     codigo: string;
     pasos: PasoTraza[];
+    referenciaTraza?: ReferenciaTraza;
 }
 
 function copiarMemoria(memoria: Memoria): Memoria {
@@ -45,9 +48,9 @@ function ejemploWhile(): EjemploDepuracion {
     const { pasos, agregar } = crearRegistro();
     const memoria: Memoria = {};
     memoria.contador = 0;
-    agregar({ linea: 3, titulo: 'Inicializar contador', explicacion: 'contador se inicializa con el valor 0.', memoria, salida: [], reto: { variable: 'contador', pista: 'Observa el valor que se asigna a contador.' } });
+    agregar({ linea: 3, titulo: 'Inicializar contador', explicacion: 'contador se inicializa con el valor 0.', memoria, salida: [] });
     memoria.suma = 0;
-    agregar({ linea: 4, titulo: 'Inicializar suma', explicacion: 'suma se inicializa con el valor 0.', memoria, salida: [], reto: { variable: 'suma', pista: 'Observa el valor inicial de suma.' } });
+    agregar({ linea: 4, titulo: 'Inicializar suma', explicacion: 'suma se inicializa con el valor 0.', memoria, salida: [] });
 
     for (let contador = 0; contador <= 3; contador++) {
         const continua = contador < 3;
@@ -58,10 +61,10 @@ function ejemploWhile(): EjemploDepuracion {
         agregar({ linea: 5, titulo: 'Evaluar condición', explicacion: continua ? `${contador} < 3 es verdadero: se entra al cuerpo del ciclo.` : '3 < 3 es falso: termina el ciclo.', memoria, salida: [], ciclo });
         if (!continua) break;
         memoria.contador = contador + 1;
-        agregar({ linea: 6, titulo: 'Incrementar contador', explicacion: `contador pasa de ${contador} a ${contador + 1}.`, memoria, salida: [], ciclo, reto: { variable: 'contador', pista: 'El operador += 1 suma una unidad al valor anterior.' } });
+        agregar({ linea: 6, titulo: 'Incrementar contador', explicacion: `contador pasa de ${contador} a ${contador + 1}.`, memoria, salida: [], ciclo });
         const sumaAnterior = memoria.suma as number;
         memoria.suma = sumaAnterior + (memoria.contador as number);
-        agregar({ linea: 7, titulo: 'Acumular en suma', explicacion: `${sumaAnterior} + ${memoria.contador} = ${memoria.suma}.`, memoria, salida: [], ciclo, reto: { variable: 'suma', pista: 'Suma al acumulador el valor actual de contador.' } });
+        agregar({ linea: 7, titulo: 'Acumular en suma', explicacion: `${sumaAnterior} + ${memoria.contador} = ${memoria.suma}.`, memoria, salida: [], ciclo });
     }
     agregar({ linea: 9, titulo: 'Mostrar resultado', explicacion: 'Se escribe el valor de suma en la consola. El programa ha terminado.', memoria, salida: [String(memoria.suma)] });
     return {
@@ -86,9 +89,9 @@ function ejemploArreglo(): EjemploDepuracion {
     const memoria: Memoria = { numeros };
     agregar({ linea: 3, titulo: 'Crear arreglo', explicacion: 'El arreglo numeros contiene tres elementos. Sus índices son 0, 1 y 2.', memoria, salida: [] });
     memoria.suma = 0;
-    agregar({ linea: 4, titulo: 'Inicializar suma', explicacion: 'El acumulador suma comienza en 0.', memoria, salida: [], reto: { variable: 'suma', pista: 'Observa el valor que recibe suma al declararse.' } });
+    agregar({ linea: 4, titulo: 'Inicializar suma', explicacion: 'El acumulador suma comienza en 0.', memoria, salida: [] });
     memoria.i = 0;
-    agregar({ linea: 5, titulo: 'Inicializar índice', explicacion: 'i comienza en 0. Esta inicialización ocurre una sola vez.', memoria, salida: [], reto: { variable: 'i', pista: 'La primera parte del for declara el índice inicial.' } });
+    agregar({ linea: 5, titulo: 'Inicializar índice', explicacion: 'i comienza en 0. Esta inicialización ocurre una sola vez.', memoria, salida: [] });
 
     for (let i = 0; i <= numeros.length; i++) {
         const continua = i < numeros.length;
@@ -100,9 +103,9 @@ function ejemploArreglo(): EjemploDepuracion {
         if (!continua) break;
         const sumaAnterior = memoria.suma as number;
         memoria.suma = sumaAnterior + numeros[i];
-        agregar({ linea: 6, titulo: 'Sumar elemento', explicacion: `numeros[${i}] vale ${numeros[i]}; ${sumaAnterior} + ${numeros[i]} = ${memoria.suma}.`, memoria, salida: [], ciclo, acceso: { arreglo: 'numeros', indice: i }, reto: { variable: 'suma', pista: 'Añade a suma el elemento del arreglo señalado por i.' } });
+        agregar({ linea: 6, titulo: 'Sumar elemento', explicacion: `numeros[${i}] vale ${numeros[i]}; ${sumaAnterior} + ${numeros[i]} = ${memoria.suma}.`, memoria, salida: [], ciclo, acceso: { arreglo: 'numeros', indice: i } });
         memoria.i = i + 1;
-        agregar({ linea: 5, titulo: 'Incrementar índice', explicacion: `i++ cambia el índice de ${i} a ${i + 1}. Después se vuelve a evaluar la condición.`, memoria, salida: [], ciclo, reto: { variable: 'i', pista: 'Después del cuerpo del for se ejecuta i++.' } });
+        agregar({ linea: 5, titulo: 'Incrementar índice', explicacion: `i++ cambia el índice de ${i} a ${i + 1}. Después se vuelve a evaluar la condición.`, memoria, salida: [], ciclo });
     }
     // i fue declarado dentro del for; sale de su ámbito al terminar el ciclo.
     delete memoria.i;

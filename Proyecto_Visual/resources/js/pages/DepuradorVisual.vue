@@ -9,6 +9,7 @@ import VisorCodigo from '../components/depurador/VisorCodigo.vue';
 import PanelMemoria from '../components/depurador/PanelMemoria.vue';
 import { ejemplosDepuracion, type EjemploDepuracion } from '../lib/ejemplosDepuracion';
 import { useDepurador } from '../composables/useDepurador';
+import { validarPaso } from '../lib/motorSemantico';
 import { convertirTraza, fuenteDesdeJSON, normalizarFuente } from '../lib/trazaSemantica';
 
 interface CodigoCargado {
@@ -21,6 +22,7 @@ interface CodigoCargado {
     contenido_codigo: string;
     fecha_creacion_codigo: string;
     huella: string;
+    huella_traza: string | null;
     traza_json: Record<string, unknown> | null;
 }
 
@@ -95,9 +97,10 @@ const codigoGuardado = computed<EjemploDepuracion>(() => ({
         ? 'Recorre la traza generada por el Parser-AST y guardada junto a este código.'
         : ejemploCompatible.value
         ? 'Este programa coincide con una traza local disponible. Puedes recorrerla paso a paso.'
-        : 'Puedes editar y guardar el programa. Para generar sus pasos automáticamente falta conectar el motor de ejecución.',
+        : 'Guarda tu programa Python para generar una traza y recorrer sus pasos.',
     archivo: form.nombre_archivo || 'Código fuente',
     codigo: form.contenido_codigo,
+    referenciaTraza: usaJSON.value && jsonCompatible.value ? trazaJSON.value?.referenciaTraza : undefined,
     pasos: usaJSON.value ? (jsonCompatible.value ? trazaJSON.value!.pasos : []) : ejemploCompatible.value?.pasos ?? [],
 }));
 
@@ -107,10 +110,10 @@ const ejemplo = computed<EjemploDepuracion>(() => props.codigo
         ? trazaJSON.value ?? { id: 'json-externo', titulo: 'JSON del motor', descripcion: 'Selecciona un archivo JSON externo para recorrer sus instrucciones.', archivo: archivoJSON.value || 'JSON del motor', codigo: '', pasos: [] }
         : (ejemplosDepuracion.find(item => item.id === ejemploId.value) ?? ejemplosDepuracion[0]));
 const {
-    indice, confirmado, reproduciendo, modo, intervalo, respuesta, feedback,
+    indice, confirmado, reproduciendo, modo, puedePredecir, intervalo, respuesta, feedback, validando,
     paso, anterior, memoria, salida, esperando, terminado, estado,
     puedeIniciar, puedeAvanzar, iniciar, pausar, avanzar, retroceder, reiniciar, confirmar,
-} = useDepurador(ejemplo);
+} = useDepurador(ejemplo, validarPaso);
 const ejecutados = computed(() => Math.max(0, indice.value + (confirmado.value ? 1 : 0)));
 const estadoVisible = computed(() => form.processing ? 'Guardando código y generando traza…' : !usaJSON.value ? estado.value : cargandoJSON.value ? 'Cargando JSON…' : fuenteSinGuardar.value ? 'Guarda o inicia para generar la nueva traza' : jsonCompatible.value ? estado.value : props.codigo ? 'Guarda o inicia para generar la traza' : 'Selecciona y carga un JSON');
 
@@ -146,7 +149,10 @@ function cargarTrazaGuardada(codigo: CodigoCargado) {
     instruccionesJSON.value = false;
     if (!codigo.traza_json) return;
     try {
-        trazaJSON.value = convertirTraza(codigo.traza_json, codigo.contenido_codigo, codigo.nombre_archivo, codigo.nombre_codigo);
+        trazaJSON.value = {
+            ...convertirTraza(codigo.traza_json, codigo.contenido_codigo, codigo.nombre_archivo, codigo.nombre_codigo),
+            referenciaTraza: codigo.huella_traza ? { codigo: codigo.id_codigo, huella_traza: codigo.huella_traza } : undefined,
+        };
         fuenteAlCargar.value = normalizarFuente(codigo.contenido_codigo);
         formatoAlCargar.value = codigo.formato;
     } catch (error) {
@@ -235,7 +241,10 @@ async function cargarJSON() {
         fuenteAlCargar.value = fuente;
         formatoAlCargar.value = formato;
         instruccionesJSON.value = !props.codigo && !vista.esEjemplo;
-        trazaJSON.value = convertido;
+        trazaJSON.value = {
+            ...convertido,
+            referenciaTraza: typeof datos.huella_traza === 'string' ? { archivo, huella_traza: datos.huella_traza } : undefined,
+        };
     } catch (error) {
         if (!control.signal.aborted && turno === turnoJSON) errorJSON.value = error instanceof Error ? error.message : 'No se pudo cargar la traza JSON.';
     } finally {
@@ -252,7 +261,7 @@ watch(archivoJSON, () => {
     errorJSON.value = '';
     if (usaJSON.value) reiniciar();
 }, { flush: 'sync' });
-watch(() => JSON.stringify([props.codigo?.id_codigo, props.codigo?.huella, props.codigo?.traza_json]), () => {
+watch(() => JSON.stringify([props.codigo?.id_codigo, props.codigo?.huella, props.codigo?.huella_traza]), () => {
     trazaJSON.value = null;
     jsonActivo.value = false;
     archivoJSON.value = '';
@@ -266,7 +275,7 @@ watch(() => JSON.stringify([props.codigo?.id_codigo, props.codigo?.huella, props
         form.defaults();
     }
     if (props.codigo) cargarTrazaGuardada(props.codigo);
-    else void actualizarArchivos(true);
+    else if (typeof window !== 'undefined') void actualizarArchivos(true);
 }, { immediate: true });
 onScopeDispose(() => { ++turnoJSON; solicitudJSON?.abort(); });
 
@@ -319,10 +328,10 @@ function cerrarSesion() {
                 <fieldset class="dv-modos">
                     <legend>Modo de recorrido</legend>
                     <div>
-                        <label :class="{ activo: modo === 'predecir' }"><input v-model="modo" type="radio" value="predecir" name="modo-depuracion" />Predecir</label>
+                        <label :class="{ activo: modo === 'predecir' }"><input v-model="modo" type="radio" value="predecir" name="modo-depuracion" :disabled="!puedePredecir" />Predecir</label>
                         <label :class="{ activo: modo === 'observar' }"><input v-model="modo" type="radio" value="observar" name="modo-depuracion" />Observar</label>
                     </div>
-                    <p>{{ modo === 'predecir' ? 'Completa los valores para continuar.' : 'Sigue la ejecución automática o paso a paso.' }}</p>
+                    <p>{{ !puedePredecir ? 'Para predecir, carga una traza 1.0 con condiciones o cambios de valores enteros.' : modo === 'predecir' ? 'Predice los valores y el resultado de las condiciones para continuar.' : 'Sigue la ejecución automática o paso a paso.' }}</p>
                 </fieldset>
             </div>
 
@@ -410,13 +419,13 @@ function cerrarSesion() {
                 <PanelMemoria
                     v-model:respuesta="respuesta"
                     :paso="paso" :indice="indice" :memoria="memoria" :anterior="anterior"
-                    :esperando="esperando" :confirmado="confirmado" :feedback="feedback"
+                    :esperando="esperando" :confirmado="confirmado" :feedback="feedback" :validando="validando"
                     @confirmar="confirmar"
                 />
             </div>
 
             <p v-if="codigo" class="dv-nota">El código Python y su traza se guardan juntos en tu cuenta. Al modificar la fuente, guarda o inicia para regenerar los pasos.</p>
-            <p v-else class="dv-nota">{{ usaJSON ? 'El recorrido sigue las instrucciones del JSON seleccionado. El archivo se lee desde la carpeta externa y tus predicciones no se guardan.' : codigo ? 'El código se guarda en la base de datos. Puedes cargar su JSON desde el selector o recorrer un ejemplo local compatible.' : 'Ejemplos de práctica con ejecución local. Puedes reiniciarlos las veces que necesites; tus respuestas no se guardan.' }}</p>
+            <p v-else class="dv-nota">{{ usaJSON ? 'El recorrido sigue las instrucciones del JSON seleccionado. Tus respuestas del modo Predecir se validan con el motor semántico.' : codigo ? 'El código se guarda en la base de datos. Puedes cargar su JSON desde el selector o recorrer un ejemplo local compatible.' : 'Ejemplos de práctica con ejecución local. Puedes reiniciarlos las veces que necesites; tus respuestas no se guardan.' }}</p>
         </main>
     </div>
 </template>
