@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\Aula;
 
-use App\Models\Aula\{PerfilUsuario, Seccion};
+use App\Models\Aula\PerfilUsuario;
+use App\Models\Aula\Seccion;
 use Illuminate\Database\QueryException;
-use Illuminate\Http\{RedirectResponse, Request};
-use Illuminate\Support\Facades\{DB, Gate};
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 class EstudianteController extends AulaController
@@ -14,20 +17,32 @@ class EstudianteController extends AulaController
     {
         Gate::authorize('update', $seccion);
         $datos = $request->validate([
-            'email_estudiante' => ['required', 'email', 'max:200'],
+            'id_estudiante' => ['required_without:email_estudiante', 'prohibits:email_estudiante', 'integer', 'min:1'],
+            'email_estudiante' => ['required_without:id_estudiante', 'email', 'max:200'],
         ]);
 
         DB::transaction(function () use ($seccion, $datos) {
             $actual = Seccion::query()->lockForUpdate()->findOrFail($seccion->getKey());
             Gate::authorize('update', $actual);
-            $estudiante = PerfilUsuario::query()
-                ->where('rol', 'estudiante')
-                ->whereRaw('LOWER(email) = ?', [mb_strtolower($datos['email_estudiante'])])
-                ->lockForUpdate()->first();
+            $porId = isset($datos['id_estudiante']);
+            $campo = $porId ? 'id_estudiante' : 'email_estudiante';
+            $consulta = PerfilUsuario::query()->where('rol', 'estudiante');
+            if ($porId) {
+                $consulta->whereKey($datos['id_estudiante']);
+            } else {
+                $consulta->whereRaw('LOWER(email) = ?', [mb_strtolower($datos['email_estudiante'])]);
+            }
+            $estudiante = $consulta->lockForUpdate()->first();
 
-            if (!$estudiante) {
+            if (! $estudiante) {
                 throw ValidationException::withMessages([
-                    'email_estudiante' => 'No existe una cuenta de estudiante con ese correo.',
+                    $campo => 'No se encontró la cuenta del estudiante seleccionado.',
+                ]);
+            }
+
+            if ($actual->estudiantes()->wherePivot('id_usuario', $estudiante->getKey())->exists()) {
+                throw ValidationException::withMessages([
+                    $campo => 'Ese estudiante ya está inscrito en la sección.',
                 ]);
             }
 
@@ -38,7 +53,7 @@ class EstudianteController extends AulaController
             } catch (QueryException $error) {
                 if ((string) $error->getCode() === '23505') {
                     throw ValidationException::withMessages([
-                        'email_estudiante' => 'Ese estudiante ya está inscrito en la sección.',
+                        $campo => 'Ese estudiante ya está inscrito en la sección.',
                     ]);
                 }
                 throw $error;

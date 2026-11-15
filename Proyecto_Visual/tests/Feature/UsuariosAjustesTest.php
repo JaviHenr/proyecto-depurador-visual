@@ -27,16 +27,16 @@ it('envia al login las rutas de ajustes sin sesion', function (string $metodo, s
     'crear' => ['post', '/ajustes/usuarios'],
     'formulario editar' => ['get', '/ajustes/usuarios/1/editar'],
     'actualizar' => ['put', '/ajustes/usuarios/1'],
+    'contraseña' => ['put', '/ajustes/contrasena'],
 ]);
 
-it('bloquea las rutas de ajustes a los estudiantes', function (string $metodo, string $ruta): void {
+it('bloquea las rutas de gestion de usuarios a los estudiantes', function (string $metodo, string $ruta): void {
     $estudiante = UsuarioFactory::new()->estudiante()->create(['id_usuario' => 1]);
 
     $this->actingAs($estudiante)->{$metodo}($ruta, datosUsuarioAjustes())->assertForbidden();
 
     $this->assertDatabaseCount('usuario', 1);
 })->with([
-    'listado' => ['get', '/ajustes'],
     'formulario nuevo' => ['get', '/ajustes/usuarios/nuevo'],
     'crear' => ['post', '/ajustes/usuarios'],
     'formulario editar' => ['get', '/ajustes/usuarios/1/editar'],
@@ -210,4 +210,58 @@ it('no ofrece una ruta para eliminar usuarios', function (): void {
     $this->actingAs($profesor)->delete('/ajustes/usuarios/'.$estudiante->id_usuario)->assertMethodNotAllowed();
 
     $this->assertModelExists($estudiante);
+});
+
+it('muestra ajustes al estudiante sin exponer el listado de usuarios', function (): void {
+    $estudiante = UsuarioFactory::new()->estudiante()->create();
+
+    $this->actingAs($estudiante)->get('/ajustes')->assertInertia(fn (Assert $page) => $page
+        ->component('Ajustes')->where('usuarios', null)
+        ->where('perfilId', $estudiante->getKey())
+        ->missing('auth.user.contrasena'));
+});
+
+it('cambia y protege solamente la contraseña del estudiante autenticado', function (): void {
+    $estudiante = UsuarioFactory::new()->estudiante()->create();
+    $otro = UsuarioFactory::new()->estudiante()->create();
+    $anterior = $otro->getAuthPassword();
+
+    $this->actingAs($estudiante)->put('/ajustes/contrasena', [
+        'current_password' => 'contrasena',
+        'password' => 'UnaClaveNueva123',
+        'password_confirmation' => 'UnaClaveNueva123',
+        'id_usuario' => $otro->getKey(),
+        'rol' => 'profesor',
+    ])->assertRedirect('/ajustes');
+
+    expect(Hash::check('UnaClaveNueva123', $estudiante->fresh()->getAuthPassword()))->toBeTrue()
+        ->and(Hash::check('contrasena', $estudiante->fresh()->getAuthPassword()))->toBeFalse()
+        ->and($estudiante->fresh()->rol)->toBe('estudiante')
+        ->and($otro->fresh()->getAuthPassword())->toBe($anterior);
+});
+
+it('rechaza un cambio de contraseña inválido sin conservar los secretos en la sesión', function (array $cambios, string $campo): void {
+    $estudiante = UsuarioFactory::new()->estudiante()->create();
+    $anterior = $estudiante->getAuthPassword();
+
+    $this->actingAs($estudiante)->from('/ajustes')->put('/ajustes/contrasena', array_replace([
+        'current_password' => 'contrasena',
+        'password' => 'UnaClaveNueva123',
+        'password_confirmation' => 'UnaClaveNueva123',
+    ], $cambios))->assertRedirect('/ajustes')->assertSessionHasErrors($campo)
+        ->assertSessionMissing('_old_input.current_password')
+        ->assertSessionMissing('_old_input.password')
+        ->assertSessionMissing('_old_input.password_confirmation');
+
+    expect($estudiante->fresh()->getAuthPassword())->toBe($anterior);
+})->with([
+    'contraseña actual incorrecta' => [['current_password' => 'incorrecta'], 'current_password'],
+    'confirmación distinta' => [['password_confirmation' => 'distinta'], 'password'],
+    'contraseña demasiado corta' => [['password' => 'corta', 'password_confirmation' => 'corta'], 'password'],
+]);
+
+it('mantiene el cambio de contraseña del profesor en su formulario existente', function (): void {
+    $profesor = UsuarioFactory::new()->profesor()->create();
+
+    $this->actingAs($profesor)->put('/ajustes/contrasena')->assertForbidden();
 });

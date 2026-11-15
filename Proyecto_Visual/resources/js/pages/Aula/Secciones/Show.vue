@@ -13,6 +13,8 @@ const props = defineProps<{
     profesor: string;
     actividades: Pagina<Actividad>;
     estudiantes: Pagina<Estudiante> | null;
+    estudiantesDisponibles: Pagina<Pick<Estudiante, 'id_usuario' | 'nombre_usuario' | 'email'>> | null;
+    busquedaEstudiante: string;
     filtros: { q: string };
     permisos: { gestionar: boolean };
 }>();
@@ -83,8 +85,13 @@ function buscarActividades() {
             </div>
 
             <template v-if="permisos.gestionar && estudiantes">
-                <p class="muted">Agrega estudiantes por el correo registrado en su cuenta.</p>
-                <FormularioEstudiante :id-seccion="seccion.id_seccion" />
+                <FormularioEstudiante
+                    v-if="estudiantesDisponibles"
+                    :id-seccion="seccion.id_seccion"
+                    :disponibles="estudiantesDisponibles"
+                    :busqueda="busquedaEstudiante"
+                    :filtro-actividad="filtros.q"
+                />
                 <div v-if="Object.keys(accionEstudiante.errors).length" class="errores" role="alert">
                     <p v-for="(error, key) in accionEstudiante.errors" :key="key">{{ error }}</p>
                 </div>

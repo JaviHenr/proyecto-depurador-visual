@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import BarraLateral from '../components/BarraLateral.vue';
 import BotonModoOscuro from '../components/BotonModoOscuro.vue';
 import { useTheme } from '../lib/useTheme';
 import GestionUsuarios from '../components/ajustes/GestionUsuarios.vue';
+import { update as actualizarContrasena } from '../actions/App/Http/Controllers/Ajustes/ContrasenaController';
 import { edit } from '../routes/ajustes/usuarios';
 import type { Pagina } from '../types/aula';
 import type { UsuarioResumen } from '../types/usuarios';
 
-defineProps<{ usuarios: Pagina<UsuarioResumen>; filtros: { q: string }; perfilId: number }>();
+defineProps<{ usuarios: Pagina<UsuarioResumen> | null; filtros: { q: string }; perfilId: number }>();
 
 const page = usePage<{
     auth?: { user?: { nombre_usuario?: string; name?: string; email?: string; rol?: string } };
@@ -23,6 +24,16 @@ const currentUser = computed(() => page.props.usuario ?? page.props.auth?.user ?
 const userName = computed(() => currentUser.value?.nombre_usuario || currentUser.value?.name || page.props.actor?.nombre || 'Profesor de prueba');
 const userEmail = computed(() => currentUser.value?.email || 'usuario@depurador.test');
 const userRole = computed(() => currentUser.value?.rol || page.props.actor?.rol || 'Profesor');
+const contrasena = useForm({ current_password: '', password: '', password_confirmation: '' });
+
+function cambiarContrasena() {
+    contrasena.put(actualizarContrasena.url(), {
+        preserveScroll: true,
+        onSuccess: () => contrasena.reset(),
+        onError: () => contrasena.reset('current_password'),
+    });
+}
+
 const userInitial = computed(() => userName.value.trim().charAt(0).toUpperCase() || 'P');
 
 // Preferencias configurables locales
@@ -65,7 +76,33 @@ function seleccionarTema(modo: 'claro' | 'oscuro') {
                 </div>
             </header>
 
-            <GestionUsuarios :usuarios="usuarios" :filtros="filtros" />
+            <GestionUsuarios v-if="usuarios" :usuarios="usuarios" :filtros="filtros" />
+
+            <section v-if="userRole === 'estudiante'" class="ajustes-seccion" aria-labelledby="titulo-contrasena">
+                <div class="ajustes-seccion-header">
+                    <div>
+                        <h2 id="titulo-contrasena">Cambiar contraseña</h2>
+                        <p>Confirma tu contraseña actual y elige una nueva de al menos 8 caracteres.</p>
+                    </div>
+                </div>
+                <form class="grid max-w-lg gap-4" @submit.prevent="cambiarContrasena">
+                    <label class="opcion-label grid gap-1" for="contrasena-actual">Contraseña actual
+                        <input id="contrasena-actual" v-model="contrasena.current_password" class="opcion-select" type="password" autocomplete="current-password" required />
+                    </label>
+                    <p v-if="contrasena.errors.current_password" class="text-sm text-[#D32F30] dark:text-[#F87070]" role="alert">{{ contrasena.errors.current_password }}</p>
+                    <label class="opcion-label grid gap-1" for="contrasena-nueva">Nueva contraseña
+                        <input id="contrasena-nueva" v-model="contrasena.password" class="opcion-select" type="password" autocomplete="new-password" required minlength="8" maxlength="72" />
+                    </label>
+                    <label class="opcion-label grid gap-1" for="contrasena-confirmacion">Repite la nueva contraseña
+                        <input id="contrasena-confirmacion" v-model="contrasena.password_confirmation" class="opcion-select" type="password" autocomplete="new-password" required minlength="8" maxlength="72" />
+                    </label>
+                    <p v-if="contrasena.errors.password" class="text-sm text-[#D32F30] dark:text-[#F87070]" role="alert">{{ contrasena.errors.password }}</p>
+                    <button class="w-fit rounded-lg bg-[#4F26C6] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60" type="submit" :disabled="contrasena.processing">
+                        {{ contrasena.processing ? 'Guardando…' : 'Actualizar contraseña' }}
+                    </button>
+                    <p v-if="contrasena.wasSuccessful" class="opcion-label" role="status">Tu contraseña se actualizó.</p>
+                </form>
+            </section>
 
             <!-- Sección: Tema y Apariencia -->
             <section class="ajustes-seccion">
@@ -162,7 +199,7 @@ function seleccionarTema(modo: 'claro' | 'oscuro') {
                         <h3 class="perfil-nombre">{{ userName }}</h3>
                         <p class="text-xs text-[#85768F] dark:text-[#8E89A8] mt-0.5">{{ userEmail }}</p>
                         <span class="perfil-rol">{{ userRole }}</span>
-                        <p class="mt-3"><Link :href="edit.url(perfilId)" class="text-sm font-semibold text-[#7455ef] dark:text-[#baabff]">Editar mis datos</Link></p>
+                        <p v-if="usuarios" class="mt-3"><Link :href="edit.url(perfilId)" class="text-sm font-semibold text-[#7455ef] dark:text-[#baabff]">Editar mis datos</Link></p>
                     </div>
                 </div>
             </section>

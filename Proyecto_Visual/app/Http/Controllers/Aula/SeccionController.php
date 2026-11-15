@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\Aula;
 
+use App\Models\Aula\PerfilUsuario;
 use App\Models\Aula\Seccion;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\{RedirectResponse, Request};
-use Illuminate\Support\Facades\{DB, Gate};
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Inertia\Response;
 
@@ -47,7 +50,31 @@ class SeccionController extends AulaController
 
         $puedeGestionar = Gate::allows('update', $seccion);
         $estudiantes = null;
+        $disponibles = null;
+        $busquedaEstudiante = '';
         if ($puedeGestionar) {
+            $filtro = $request->validate(['buscar_estudiante' => ['nullable', 'string', 'max:100']]);
+            $busquedaEstudiante = $filtro['buscar_estudiante'] ?? '';
+            $perfil = new PerfilUsuario;
+            $disponibles = $perfil->newQuery()
+                ->where('rol', 'estudiante')
+                ->whereNotIn($perfil->getKeyName(), DB::table('seccion_estudiante')
+                    ->select('id_usuario')->where('id_seccion', $seccion->getKey()))
+                ->when($busquedaEstudiante !== '', function (Builder $query) use ($busquedaEstudiante): void {
+                    $patron = '%'.mb_strtolower($busquedaEstudiante).'%';
+                    $query->where(fn (Builder $busqueda) => $busqueda
+                        ->whereRaw('LOWER(nombre_usuario) LIKE ?', [$patron])
+                        ->orWhereRaw('LOWER(email) LIKE ?', [$patron]));
+                })
+                ->orderBy('nombre_usuario')->orderBy($perfil->getKeyName())
+                ->paginate(8, [$perfil->getKeyName(), 'nombre_usuario', 'email'], 'disponibles_page')
+                ->withQueryString()
+                ->through(fn (PerfilUsuario $estudiante): array => [
+                    'id_usuario' => (int) $estudiante->getKey(),
+                    'nombre_usuario' => $estudiante->nombre_usuario,
+                    'email' => $estudiante->email,
+                ]);
+
             $estudiantes = $seccion->estudiantes()
                 ->orderBy('nombre_usuario')
                 ->paginate(10, [
@@ -69,6 +96,8 @@ class SeccionController extends AulaController
             'profesor' => $seccion->profesor?->nombre_usuario ?? $seccion->profesor?->name ?? 'Profesor',
             'actividades' => $actividades,
             'estudiantes' => $estudiantes,
+            'estudiantesDisponibles' => $disponibles,
+            'busquedaEstudiante' => $busquedaEstudiante,
             'filtros' => ['q' => $q],
             'permisos' => ['gestionar' => $puedeGestionar],
         ]);
@@ -80,6 +109,7 @@ class SeccionController extends AulaController
         $seccion = new Seccion($this->datos($request));
         $seccion->id_usuario = $request->user()->getAuthIdentifier();
         $seccion->save();
+
         return to_route('aula.secciones.show', $seccion)->with('aula_status', 'Sección creada.');
     }
 
@@ -87,6 +117,7 @@ class SeccionController extends AulaController
     {
         Gate::authorize('update', $seccion);
         $seccion->update($this->datos($request));
+
         return to_route('aula.secciones.show', $seccion)->with('aula_status', 'Sección actualizada.');
     }
 
@@ -102,6 +133,7 @@ class SeccionController extends AulaController
             // Las matrículas se eliminan por ON DELETE CASCADE. No se elimina ningún usuario.
             $this->eliminarRegistro($actual, 'No se puede eliminar: existen registros que usan esta sección.');
         });
+
         return to_route('aula.secciones.index')->with('aula_status', 'Sección eliminada.');
     }
 

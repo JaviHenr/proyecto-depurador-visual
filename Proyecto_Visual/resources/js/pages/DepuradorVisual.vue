@@ -117,11 +117,15 @@ const {
 const ejecutados = computed(() => Math.max(0, indice.value + (confirmado.value ? 1 : 0)));
 const estadoVisible = computed(() => form.processing ? 'Guardando código y generando traza…' : !usaJSON.value ? estado.value : cargandoJSON.value ? 'Cargando JSON…' : fuenteSinGuardar.value ? 'Guarda o inicia para generar la nueva traza' : jsonCompatible.value ? estado.value : props.codigo ? 'Guarda o inicia para generar la traza' : 'Selecciona y carga un JSON');
 
+const editorAbierto = ref(false);
+watch(() => props.codigo?.id_codigo, () => { editorAbierto.value = false; });
+
 function guardarCodigo(iniciarDespues = false) {
     if (!props.codigo || !props.permisosCodigo.editar || form.processing) return;
     pausar();
     form.put(`/codigos/${props.codigo.id_codigo}`, {
         preserveScroll: true,
+        onError: () => { editorAbierto.value = true; },
         onSuccess: (pagina: { props: Record<string, unknown> }) => {
             // La redirección devuelve la nueva huella para la siguiente edición.
             const guardado = pagina.props.codigo as CodigoCargado | null | undefined;
@@ -293,7 +297,7 @@ function cerrarSesion() {
     <div class="depurador-app">
         <BarraLateral pestana-activa="depurador" />
 
-        <main class="dv-contenido">
+        <main class="dv-contenido dv-recorrido">
             <header class="dv-encabezado">
                 <div>
                     <Link v-if="codigo" :href="rutas.codigos" class="dv-volver">← Volver a códigos</Link>
@@ -311,58 +315,64 @@ function cerrarSesion() {
             <p v-if="page.props.aulaFlash" class="dv-aviso correcto" role="status">{{ page.props.aulaFlash }}</p>
 
             <div class="dv-seleccion">
-                <div class="dv-ejercicio">
-                    <label :for="codigo ? undefined : 'ejemplo-depuracion'">
-                        {{ codigo ? 'Código cargado' : 'Ejercicio de ejemplo' }}
-                        <span class="dv-etiqueta">{{ codigo ? form.formato : usaJSON ? 'JSON del motor' : 'Java' }}</span>
-                    </label>
-                    <strong v-if="codigo" class="dv-nombre-codigo">{{ form.nombre_archivo }}</strong>
-                    <select v-else id="ejemplo-depuracion" v-model="ejemploId">
-                        <option value="json-externo">{{ archivoJSON ? `JSON · ${archivoJSON.split('/').pop()}` : 'JSON del motor' }}</option>
-                        <option v-for="item in ejemplosDepuracion" :key="item.id" :value="item.id">{{ item.titulo }}</option>
-                    </select>
-                    <p>{{ ejemplo.descripcion }}</p>
-                    <p v-if="codigo && autorCodigo">Autor: {{ autorCodigo.nombre }}<span v-if="autorCodigo.email"> · {{ autorCodigo.email }}</span></p>
-                    <p v-if="codigo && actividadCodigo">Actividad: {{ actividadCodigo }}</p>
-                </div>
-                <fieldset class="dv-modos">
-                    <legend>Modo de recorrido</legend>
-                    <div>
-                        <label :class="{ activo: modo === 'predecir' }"><input v-model="modo" type="radio" value="predecir" name="modo-depuracion" :disabled="!puedePredecir" />Predecir</label>
-                        <label :class="{ activo: modo === 'observar' }"><input v-model="modo" type="radio" value="observar" name="modo-depuracion" />Observar</label>
+                <div class="dv-origen" :class="{ 'con-json': !codigo }">
+                    <div class="dv-ejercicio">
+                        <label :for="codigo ? undefined : 'ejemplo-depuracion'">
+                            {{ codigo ? 'Código cargado' : 'Ejercicio de ejemplo' }}
+                            <span class="dv-etiqueta">{{ codigo ? form.formato : usaJSON ? 'JSON del motor' : 'Java' }}</span>
+                        </label>
+                        <strong v-if="codigo" class="dv-nombre-codigo">{{ form.nombre_archivo }}</strong>
+                        <select v-else id="ejemplo-depuracion" v-model="ejemploId">
+                            <option value="json-externo">{{ archivoJSON ? `JSON · ${archivoJSON.split('/').pop()}` : 'JSON del motor' }}</option>
+                            <option v-for="item in ejemplosDepuracion" :key="item.id" :value="item.id">{{ item.titulo }}</option>
+                        </select>
+                        <p>{{ ejemplo.descripcion }}</p>
+                        <p v-if="codigo && autorCodigo">Autor: {{ autorCodigo.nombre }}<span v-if="autorCodigo.email"> · {{ autorCodigo.email }}</span></p>
+                        <p v-if="codigo && actividadCodigo">Actividad: {{ actividadCodigo }}</p>
                     </div>
-                    <p>{{ !puedePredecir ? 'Para predecir, carga una traza 1.0 con condiciones o cambios de valores enteros.' : modo === 'predecir' ? 'Predice los valores y el resultado de las condiciones para continuar.' : 'Sigue la ejecución automática o paso a paso.' }}</p>
-                </fieldset>
+                    <fieldset class="dv-modos">
+                        <legend>Modo de recorrido</legend>
+                        <div>
+                            <label :class="{ activo: modo === 'predecir' }"><input v-model="modo" type="radio" value="predecir" name="modo-depuracion" :disabled="!puedePredecir" />Predecir</label>
+                            <label :class="{ activo: modo === 'observar' }"><input v-model="modo" type="radio" value="observar" name="modo-depuracion" />Observar</label>
+                        </div>
+                        <p>{{ !puedePredecir ? 'Para predecir, carga una traza 1.0 con condiciones o cambios de valores enteros.' : modo === 'predecir' ? 'Predice los valores y el resultado de las condiciones para continuar.' : 'Sigue la ejecución automática o paso a paso.' }}</p>
+                    </fieldset>
+
+                    <section v-if="!codigo" class="dv-json" aria-label="JSON del motor">
+                        <div class="dv-ejercicio">
+                            <label for="archivo-traza-json">JSON del motor</label>
+                            <select id="archivo-traza-json" v-model="archivoJSON" :disabled="cargandoJSON || !archivosJSON.length">
+                                <option value="" disabled>Selecciona un archivo JSON</option>
+                                <option v-for="archivo in archivosJSON" :key="archivo.ruta" :value="archivo.ruta">{{ archivo.nombre }}{{ archivo.origen === 'codigo' ? ' · Este código' : '' }}</option>
+                            </select>
+                            <p v-if="cargandoJSON" role="status">Leyendo la carpeta externa…</p>
+                            <p v-else-if="usaJSON && jsonCompatible" role="status">{{ ejemplo.pasos.length }} pasos cargados de {{ archivoJSON.split('/').pop() }}.</p>
+                            <p v-else-if="usaJSON && fuenteSinGuardar" role="status">Guarda los cambios y carga el JSON que el motor genere para el código actualizado.</p>
+                            <p v-else>{{ codigo ? 'Elige el JSON que el motor generó para este código.' : 'Selecciona un JSON y carga las instrucciones que entregó el motor.' }}</p>
+                            <p v-if="errorJSON" class="dv-aviso error" role="alert">{{ errorJSON }}</p>
+                            <p v-if="usaJSON && instruccionesJSON">Esta vista muestra las instrucciones del JSON por línea.</p>
+                            <div class="dv-editor-pie">
+                                <button type="button" class="dv-boton dv-primario" :disabled="cargandoJSON || !archivoJSON || fuenteSinGuardar" @click="cargarJSON">Cargar JSON</button>
+                                <button type="button" class="dv-boton" :disabled="cargandoJSON" @click="actualizarArchivos()">Actualizar lista</button>
+                                <button v-if="codigo && ejemploCompatible && jsonActivo" type="button" class="dv-boton" @click="jsonActivo = false; reiniciar()">Usar ejemplo local</button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
             </div>
-
-
-            <section v-if="!codigo" class="dv-seleccion" aria-label="JSON del motor">
-                <div class="dv-ejercicio">
-                    <label for="archivo-traza-json">JSON del motor</label>
-                    <select id="archivo-traza-json" v-model="archivoJSON" :disabled="cargandoJSON || !archivosJSON.length">
-                        <option value="" disabled>Selecciona un archivo JSON</option>
-                        <option v-for="archivo in archivosJSON" :key="archivo.ruta" :value="archivo.ruta">{{ archivo.nombre }}{{ archivo.origen === 'codigo' ? ' · Este código' : '' }}</option>
-                    </select>
-                    <p v-if="cargandoJSON" role="status">Leyendo la carpeta externa…</p>
-                    <p v-else-if="usaJSON && jsonCompatible" role="status">{{ ejemplo.pasos.length }} pasos cargados de {{ archivoJSON.split('/').pop() }}.</p>
-                    <p v-else-if="usaJSON && fuenteSinGuardar" role="status">Guarda los cambios y carga el JSON que el motor genere para el código actualizado.</p>
-                    <p v-else>{{ codigo ? 'Elige el JSON que el motor generó para este código.' : 'Selecciona un JSON y carga las instrucciones que entregó el motor.' }}</p>
-                    <p v-if="errorJSON" class="dv-aviso error" role="alert">{{ errorJSON }}</p>
-                    <p v-if="usaJSON && instruccionesJSON">Esta vista muestra las instrucciones del JSON por línea.</p>
-                    <div class="dv-editor-pie">
-                        <button type="button" class="dv-boton dv-primario" :disabled="cargandoJSON || !archivoJSON || fuenteSinGuardar" @click="cargarJSON">Cargar JSON</button>
-                        <button type="button" class="dv-boton" :disabled="cargandoJSON" @click="actualizarArchivos()">Actualizar lista</button>
-                        <button v-if="codigo && ejemploCompatible && jsonActivo" type="button" class="dv-boton" @click="jsonActivo = false; reiniciar()">Usar ejemplo local</button>
-                    </div>
-                </div>
-            </section>
 
             <form v-if="codigo && permisosCodigo.editar" class="dv-panel dv-editor" @submit.prevent="guardarCodigo()">
                 <header class="dv-panel-cabecera">
                     <h2>Editor del código</h2>
-                    <span class="dv-etiqueta">{{ form.isDirty ? 'Cambios sin guardar' : 'Guardado' }}</span>
+                    <div class="dv-editor-acciones">
+                        <span class="dv-etiqueta">{{ form.isDirty ? 'Cambios sin guardar' : 'Guardado' }}</span>
+                        <button type="button" class="dv-boton" :aria-expanded="editorAbierto" aria-controls="dv-editor-contenido" @click="editorAbierto = !editorAbierto">
+                            {{ editorAbierto ? 'Ocultar editor' : 'Editar código' }}
+                        </button>
+                    </div>
                 </header>
-                <div class="dv-editor-cuerpo">
+                <div v-show="editorAbierto" id="dv-editor-contenido" class="dv-editor-cuerpo">
                     <div v-if="Object.keys(form.errors).length" class="dv-aviso error" role="alert">
                         <p v-for="(error, key) in form.errors" :key="key">{{ error }}</p>
                     </div>
@@ -408,20 +418,18 @@ function cerrarSesion() {
             />
 
             <div class="dv-columnas">
-                <div class="dv-columna-codigo">
-                    <VisorCodigo :titulo="usaJSON && instruccionesJSON ? 'Instrucciones del JSON' : 'Código fuente'" :codigo="ejemplo.codigo" :archivo="ejemplo.archivo" :linea="paso?.linea ?? null" :esperando="esperando" />
-                    <section class="dv-panel dv-consola" aria-labelledby="titulo-consola">
-                        <header class="dv-panel-cabecera"><h2 id="titulo-consola">Consola de salida</h2><span v-if="terminado" class="dv-completado">Finalizado</span></header>
-                        <pre v-if="salida.length" aria-live="polite">{{ salida.join('\n') }}</pre>
-                        <p v-else>{{ terminado ? 'El programa finalizó sin instrucciones de salida.' : 'Aquí aparecerán las salidas incluidas en la traza.' }}</p>
-                    </section>
-                </div>
+                <VisorCodigo :titulo="usaJSON && instruccionesJSON ? 'Instrucciones del JSON' : 'Código fuente'" :codigo="ejemplo.codigo" :archivo="ejemplo.archivo" :linea="paso?.linea ?? null" :esperando="esperando" />
                 <PanelMemoria
                     v-model:respuesta="respuesta"
                     :paso="paso" :indice="indice" :memoria="memoria" :anterior="anterior"
                     :esperando="esperando" :confirmado="confirmado" :feedback="feedback" :validando="validando"
                     @confirmar="confirmar"
                 />
+                <section class="dv-panel dv-consola" aria-labelledby="titulo-consola">
+                    <header class="dv-panel-cabecera"><h2 id="titulo-consola">Consola de salida</h2><span v-if="terminado" class="dv-completado">Finalizado</span></header>
+                    <pre v-if="salida.length" aria-live="polite">{{ salida.join('\n') }}</pre>
+                    <p v-else>{{ terminado ? 'El programa finalizó sin instrucciones de salida.' : 'Aquí aparecerán las salidas incluidas en la traza.' }}</p>
+                </section>
             </div>
 
             <p v-if="codigo" class="dv-nota">El código Python y su traza se guardan juntos en tu cuenta. Al modificar la fuente, guarda o inicia para regenerar los pasos.</p>
@@ -471,6 +479,7 @@ function cerrarSesion() {
 .depurador-app .dv-aviso.lectura { border-color: #d7dce9; background: #f4f6fa; color: #657087; }
 .depurador-app .dv-aviso.informacion a { color: #6542d6; font-weight: 600; }
 .depurador-app .dv-editor { overflow: hidden; margin-bottom: 22px; }
+.depurador-app .dv-editor-acciones { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
 .depurador-app .dv-editor-cuerpo { padding: 22px; }
 .depurador-app .dv-campos-editor { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 150px; gap: 13px; margin-bottom: 16px; }
 .depurador-app .dv-campos-editor label, .depurador-app .dv-codigo-label { display: grid; gap: 6px; color: #766184; font-size: 12px; }
@@ -483,7 +492,7 @@ function cerrarSesion() {
 .depurador-app .dv-primario { border-color: var(--dv-violeta); background: var(--dv-violeta); color: #fff; }
 .depurador-app .dv-primario:not(:disabled):hover { border-color: #6345d1; background: #6345d1; }
 .depurador-app .dv-columnas { display: grid; grid-template-columns: minmax(0, 1.18fr) minmax(310px, .9fr); align-items: start; gap: 22px; }
-.depurador-app .dv-columna-codigo { display: grid; gap: 22px; min-width: 0; }
+.depurador-app .dv-columnas > .dv-consola { grid-column: 1 / -1; }
 .depurador-app .dv-consola { overflow: hidden; }
 .depurador-app .dv-consola pre { min-height: 83px; max-height: 180px; margin: 0; padding: 20px; overflow: auto; background: #fcfaff; color: #7b5ba3; font: 14px/1.65 ui-monospace, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
 .depurador-app .dv-consola > p { min-height: 83px; padding: 20px; color: #aa98b5; font-size: 12px; }
@@ -514,5 +523,124 @@ function cerrarSesion() {
     .depurador-app .dv-encabezado { flex-direction: column; }
     .depurador-app .dv-encabezado h1 { font-size: 25px; }
     .depurador-app .dv-contenido { padding-right: 16px; padding-left: 16px; }
+}
+
+
+/* Jerarquía del recorrido: configuración, ejecución y lectura del paso. */
+.depurador-app .dv-recorrido {
+    --dv-violeta: #4F26C6;
+    --rec-superficie: #FFFFFF;
+    --rec-fondo: #FAF8F5;
+    --rec-suave: #F1EDFB;
+    --rec-activo: #EDE7F9;
+    --rec-borde: #DED5EF;
+    --rec-texto: #1E1B38;
+    --rec-secundario: #726C87;
+    --rec-acento: #4F26C6;
+    --rec-alerta: #795217;
+}
+html.dark .depurador-app .dv-recorrido {
+    --rec-superficie: #1C1833;
+    --rec-fondo: #12101F;
+    --rec-suave: #221B3B;
+    --rec-activo: #2C2053;
+    --rec-borde: #3B315B;
+    --rec-texto: #FFFFFF;
+    --rec-secundario: #ABA4C5;
+    --rec-acento: #C5B6F5;
+    --rec-alerta: #F4D38A;
+}
+.depurador-app .dv-recorrido .dv-encabezado { margin-bottom: 18px; }
+.depurador-app .dv-recorrido .dv-encabezado h1 { overflow-wrap: anywhere; line-height: 1.2; }
+.depurador-app .dv-recorrido .dv-encabezado p { color: var(--rec-secundario); }
+.depurador-app .dv-recorrido .dv-seleccion {
+    display: block;
+    margin-bottom: 12px;
+    padding: 14px 18px;
+    background: var(--rec-superficie);
+    border-color: var(--rec-borde);
+    border-radius: 14px;
+}
+.depurador-app .dv-origen {
+    display: grid;
+    align-items: start;
+    gap: 14px 20px;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+}
+.depurador-app .dv-recorrido .dv-ejercicio { min-width: 0; overflow-wrap: anywhere; }
+.depurador-app .dv-recorrido .dv-ejercicio select { width: 100%; }
+.depurador-app .dv-recorrido .dv-ejercicio > label,
+.depurador-app .dv-recorrido .dv-modos legend { color: var(--rec-texto); font-weight: 700; margin-bottom: 6px; }
+.depurador-app .dv-recorrido .dv-modos > div { background: var(--rec-fondo); border-color: var(--rec-borde); }
+.depurador-app .dv-recorrido .dv-modos label { background: transparent; border: 1px solid transparent; color: var(--rec-secundario); }
+.depurador-app .dv-recorrido .dv-modos label.activo { background: var(--rec-activo); color: var(--rec-acento); border-color: var(--rec-borde); font-weight: 700; box-shadow: none; }
+.depurador-app .dv-recorrido .dv-modos label:has(input:disabled) { opacity: .65; cursor: not-allowed; }
+.depurador-app .dv-recorrido .dv-ejercicio p:not(.dv-aviso),
+.depurador-app .dv-recorrido .dv-modos p { color: var(--rec-secundario); margin-top: 6px; }
+.depurador-app .dv-json { grid-column: 1 / -1; padding-top: 12px; border-top: 1px solid var(--rec-borde); }
+.depurador-app .dv-json .dv-editor-pie { justify-content: flex-start; margin-top: 8px; }
+.depurador-app .dv-recorrido .dv-panel { border-color: var(--rec-borde); border-radius: 14px; box-shadow: none; }
+.depurador-app .dv-recorrido .dv-panel-cabecera { border-color: var(--rec-borde); padding: 12px 16px; }
+.depurador-app .dv-recorrido .dv-panel-cabecera h2 { color: var(--rec-texto); font-weight: 700; }
+.depurador-app .dv-recorrido .dv-etiqueta { background: var(--rec-activo); color: var(--rec-acento); overflow-wrap: anywhere; }
+.depurador-app .dv-recorrido .dv-nombre-codigo,
+.depurador-app .dv-recorrido .dv-volver { color: var(--rec-acento); overflow-wrap: anywhere; }
+.depurador-app .dv-recorrido .dv-editor { margin-bottom: 12px; }
+.depurador-app .dv-recorrido .dv-editor-acciones [aria-expanded]::after { content: ''; width: .45em; height: .45em; border-right: 1px solid; border-bottom: 1px solid; transform: translateY(-2px) rotate(45deg); }
+.depurador-app .dv-recorrido .dv-editor-acciones [aria-expanded="true"]::after { transform: translateY(2px) rotate(225deg); }
+.depurador-app .dv-recorrido .dv-boton:not(.dv-primario) { color: var(--rec-acento); }
+.depurador-app .dv-recorrido .controles { padding: 12px 16px; margin-bottom: 14px; }
+.depurador-app .dv-recorrido .estado-ejecucion { margin: 9px 0 6px; color: var(--rec-secundario); }
+.depurador-app .dv-recorrido .estado-ejecucion > :last-child { color: var(--rec-texto); font-weight: 700; font-variant-numeric: tabular-nums; }
+.depurador-app .dv-recorrido .estado.esperando { color: var(--rec-alerta); }
+.depurador-app .dv-recorrido .estado.reproduciendo { color: var(--rec-acento); }
+.depurador-app .dv-recorrido .dv-columnas { gap: 14px; }
+.depurador-app .dv-recorrido .visor .codigo { min-height: 220px; }
+.depurador-app .dv-recorrido .visor footer { color: var(--rec-secundario); border-color: var(--rec-borde); }
+.depurador-app .dv-recorrido .linea.activa { background: var(--rec-activo); border-left-color: var(--rec-acento); }
+.depurador-app .dv-recorrido .linea.activa .numero-linea { color: var(--rec-acento); }
+.depurador-app .dv-recorrido .panel-memoria:has(.confirmar) { border-top: 3px solid var(--rec-acento); }
+.depurador-app .dv-recorrido .cuerpo-memoria { padding: 16px; }
+.depurador-app .dv-recorrido .paso-cabecera { margin-bottom: 14px; }
+.depurador-app .dv-recorrido .paso-cabecera h3 { color: var(--rec-texto); overflow-wrap: anywhere; }
+.depurador-app .dv-recorrido .paso-cabecera p { color: var(--rec-texto); overflow-wrap: anywhere; }
+.depurador-app .dv-recorrido .rotulo { color: var(--rec-acento); font-weight: 700; }
+.depurador-app .dv-recorrido .variable { background: var(--rec-fondo); border-color: var(--rec-borde); overflow-wrap: anywhere; }
+.depurador-app .dv-recorrido .variable.pregunta,
+.depurador-app .dv-recorrido .variable.cambio,
+.depurador-app .dv-recorrido .condicion-pregunta { background: var(--rec-suave); border-color: var(--rec-borde); }
+.depurador-app .dv-recorrido .variable input { background: var(--rec-superficie); border-color: var(--rec-acento); color: var(--rec-texto); }
+.depurador-app .dv-recorrido .variable label,
+.depurador-app .dv-recorrido .nombre-variable code,
+.depurador-app .dv-recorrido .condicion-pregunta legend { color: var(--rec-texto); }
+.depurador-app .dv-recorrido .condicion-pregunta label {
+    flex: 1 1 110px;
+    min-height: 38px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: var(--rec-superficie);
+    color: var(--rec-texto);
+    border: 1px solid var(--rec-borde);
+    cursor: pointer;
+}
+.depurador-app .dv-recorrido .condicion-pregunta label:has(:checked) { background: var(--rec-activo); border-color: var(--rec-acento); }
+.depurador-app .dv-recorrido .valor { color: var(--rec-acento); }
+.depurador-app .dv-recorrido .anterior, .depurador-app .dv-recorrido .tipo,
+.depurador-app .dv-recorrido .pista, .depurador-app .dv-recorrido .dv-nota { color: var(--rec-secundario); }
+.depurador-app .dv-recorrido .panel-memoria .vacio { min-height: 240px; padding: 20px; }
+.depurador-app .dv-recorrido .panel-memoria .vacio h3 { color: var(--rec-texto); }
+.depurador-app .dv-recorrido .panel-memoria .vacio p,
+.depurador-app .dv-recorrido .nota-vacio { color: var(--rec-secundario); }
+.depurador-app .dv-recorrido .dv-consola > p,
+.depurador-app .dv-recorrido .dv-consola pre { min-height: 0; padding: 12px 16px; color: var(--rec-secundario); background: var(--rec-superficie); }
+@media (min-width: 1250px) {
+    .depurador-app .dv-origen.con-json { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .depurador-app .dv-origen.con-json .dv-json { grid-column: auto; border-top: 0; border-inline-start: 1px solid var(--rec-borde); padding: 0 0 0 16px; }
+}
+@media (max-width: 540px) {
+    .depurador-app .dv-origen { grid-template-columns: minmax(0, 1fr); }
+    .depurador-app .dv-recorrido .dv-seleccion { padding: 12px; }
+    .depurador-app .dv-recorrido .visor .codigo { min-height: 0; max-height: 240px; }
+    .depurador-app .dv-acciones-cuenta { gap: 8px; }
 }
 </style>

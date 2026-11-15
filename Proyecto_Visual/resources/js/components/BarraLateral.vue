@@ -29,7 +29,7 @@ const page = usePage<{
 const { isDark } = useTheme();
 
 const currentUser = computed(() => page.props.usuario ?? page.props.auth?.user ?? null);
-const esProfesor = computed(() => (currentUser.value?.rol ?? page.props.actor?.rol) === 'profesor');
+const puedeVerAjustes = computed(() => ['profesor', 'estudiante'].includes(currentUser.value?.rol ?? page.props.actor?.rol ?? ''));
 const userName = computed(() => currentUser.value?.nombre_usuario || currentUser.value?.name || page.props.actor?.nombre || 'Profesor de prueba');
 const userRole = computed(() => currentUser.value?.rol || page.props.actor?.rol || 'Profesor');
 const userInitial = computed(() => userName.value.trim().charAt(0).toUpperCase() || 'P');
@@ -57,7 +57,7 @@ const elementosNav = computed<NavItem[]>(() => {
         { id: 'depurador', etiqueta: 'Depuración', ruta: '/depurador', tipoIcono: 'depurador' },
         { id: 'ajustes', etiqueta: 'Ajustes', ruta: ajustes.url(), tipoIcono: 'ajustes' },
     ];
-    return elementos.filter(item => item.id !== 'ajustes' || esProfesor.value);
+    return elementos.filter(item => item.id !== 'ajustes' || puedeVerAjustes.value);
 });
 
 const navegar = (item: NavItem) => {
