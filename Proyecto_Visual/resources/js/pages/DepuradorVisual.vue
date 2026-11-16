@@ -314,32 +314,20 @@ function cerrarSesion() {
 
             <p v-if="page.props.aulaFlash" class="dv-aviso correcto" role="status">{{ page.props.aulaFlash }}</p>
 
-            <div class="dv-seleccion">
-                <div class="dv-origen" :class="{ 'con-json': !codigo }">
+            <div v-if="!codigo" class="dv-seleccion">
+                <div class="dv-origen">
                     <div class="dv-ejercicio">
-                        <label :for="codigo ? undefined : 'ejemplo-depuracion'">
-                            {{ codigo ? 'Código cargado' : 'Ejercicio de ejemplo' }}
-                            <span class="dv-etiqueta">{{ codigo ? form.formato : usaJSON ? 'JSON del motor' : 'Java' }}</span>
+                        <label for="ejemplo-depuracion">
+                            Ejercicio de ejemplo
+                            <span class="dv-etiqueta">{{ usaJSON ? 'JSON del motor' : 'Java' }}</span>
                         </label>
-                        <strong v-if="codigo" class="dv-nombre-codigo">{{ form.nombre_archivo }}</strong>
-                        <select v-else id="ejemplo-depuracion" v-model="ejemploId">
+                        <select id="ejemplo-depuracion" v-model="ejemploId">
                             <option value="json-externo">{{ archivoJSON ? `JSON · ${archivoJSON.split('/').pop()}` : 'JSON del motor' }}</option>
                             <option v-for="item in ejemplosDepuracion" :key="item.id" :value="item.id">{{ item.titulo }}</option>
                         </select>
                         <p>{{ ejemplo.descripcion }}</p>
-                        <p v-if="codigo && autorCodigo">Autor: {{ autorCodigo.nombre }}<span v-if="autorCodigo.email"> · {{ autorCodigo.email }}</span></p>
-                        <p v-if="codigo && actividadCodigo">Actividad: {{ actividadCodigo }}</p>
                     </div>
-                    <fieldset class="dv-modos">
-                        <legend>Modo de recorrido</legend>
-                        <div>
-                            <label :class="{ activo: modo === 'predecir' }"><input v-model="modo" type="radio" value="predecir" name="modo-depuracion" :disabled="!puedePredecir" />Predecir</label>
-                            <label :class="{ activo: modo === 'observar' }"><input v-model="modo" type="radio" value="observar" name="modo-depuracion" />Observar</label>
-                        </div>
-                        <p>{{ !puedePredecir ? 'Para predecir, carga una traza 1.0 con condiciones o cambios de valores enteros.' : modo === 'predecir' ? 'Predice los valores y el resultado de las condiciones para continuar.' : 'Sigue la ejecución automática o paso a paso.' }}</p>
-                    </fieldset>
-
-                    <section v-if="!codigo" class="dv-json" aria-label="JSON del motor">
+                    <section class="dv-json" aria-label="JSON del motor">
                         <div class="dv-ejercicio">
                             <label for="archivo-traza-json">JSON del motor</label>
                             <select id="archivo-traza-json" v-model="archivoJSON" :disabled="cargandoJSON || !archivosJSON.length">
@@ -362,17 +350,26 @@ function cerrarSesion() {
                 </div>
             </div>
 
-            <form v-if="codigo && permisosCodigo.editar" class="dv-panel dv-editor" @submit.prevent="guardarCodigo()">
-                <header class="dv-panel-cabecera">
-                    <h2>Editor del código</h2>
-                    <div class="dv-editor-acciones">
+            <section v-else class="dv-panel dv-archivo" :class="{ 'dv-editor': permisosCodigo.editar }" aria-labelledby="dv-archivo-titulo">
+                <header class="dv-archivo-cabecera">
+                    <div class="dv-archivo-info">
+                        <div class="dv-archivo-identidad">
+                            <span class="dv-etiqueta">{{ form.formato }}</span>
+                            <h2 id="dv-archivo-titulo" class="dv-nombre-codigo">{{ form.nombre_archivo }}</h2>
+                        </div>
+                        <p class="dv-archivo-detalles">
+                            {{ ejemplo.descripcion }}<template v-if="autorCodigo"> · Autor: {{ autorCodigo.nombre }}<span v-if="autorCodigo.email"> · {{ autorCodigo.email }}</span></template><template v-if="actividadCodigo"> · Actividad: {{ actividadCodigo }}</template>
+                        </p>
+                    </div>
+                    <div v-if="permisosCodigo.editar" class="dv-editor-acciones">
                         <span class="dv-etiqueta">{{ form.isDirty ? 'Cambios sin guardar' : 'Guardado' }}</span>
                         <button type="button" class="dv-boton" :aria-expanded="editorAbierto" aria-controls="dv-editor-contenido" @click="editorAbierto = !editorAbierto">
                             {{ editorAbierto ? 'Ocultar editor' : 'Editar código' }}
                         </button>
                     </div>
+                    <span v-else class="dv-etiqueta">Solo lectura<span class="sr-only">. Solo su autor puede modificarlo o eliminarlo.</span></span>
                 </header>
-                <div v-show="editorAbierto" id="dv-editor-contenido" class="dv-editor-cuerpo">
+                <form v-if="permisosCodigo.editar" v-show="editorAbierto" id="dv-editor-contenido" class="dv-editor-cuerpo" @submit.prevent="guardarCodigo()">
                     <div v-if="Object.keys(form.errors).length" class="dv-aviso error" role="alert">
                         <p v-for="(error, key) in form.errors" :key="key">{{ error }}</p>
                     </div>
@@ -396,12 +393,8 @@ function cerrarSesion() {
                         </button>
                         <span>{{ form.contenido_codigo.split('\n').length }} líneas · {{ form.contenido_codigo.length }} caracteres</span>
                     </div>
-                </div>
-            </form>
-
-            <div v-else-if="codigo" class="dv-aviso lectura" role="note">
-                Estás viendo el código de {{ autorCodigo?.nombre || 'un estudiante' }} en modo de solo lectura. Solo su autor puede modificarlo o eliminarlo.
-            </div>
+                </form>
+            </section>
 
             <div v-if="codigo && !ejemploCompatible && !usaJSON" class="dv-aviso informacion" role="status">
                 Guarda o inicia este programa Python para generar su traza de ejecución.
@@ -415,7 +408,23 @@ function cerrarSesion() {
                 :reproduciendo="reproduciendo" :esperando="esperando"
                 :puede-iniciar="!form.processing && (puedeIniciar || necesitaGenerarTraza)" :puede-avanzar="!form.processing && puedeAvanzar"
                 @iniciar="iniciarCodigo" @pausar="pausar" @retroceder="retroceder" @avanzar="avanzar" @reiniciar="reiniciar"
-            />
+            >
+                <template #modo>
+                    <fieldset class="dv-modos-compactos" aria-describedby="dv-modo-descripcion">
+                        <legend class="sr-only">Modo de recorrido</legend>
+                        <div class="dv-modos-fila">
+                            <span class="dv-modos-titulo" aria-hidden="true">Modo</span>
+                            <div class="dv-modos-opciones">
+                                <label :class="{ activo: modo === 'predecir' }"><input v-model="modo" type="radio" value="predecir" name="modo-depuracion" :disabled="!puedePredecir" />Predecir</label>
+                                <label :class="{ activo: modo === 'observar' }"><input v-model="modo" type="radio" value="observar" name="modo-depuracion" />Observar</label>
+                            </div>
+                        </div>
+                    </fieldset>
+                </template>
+                <template #ayuda>
+                    <p id="dv-modo-descripcion" :class="puedePredecir ? 'sr-only' : 'dv-modos-ayuda'">{{ !puedePredecir ? 'Para predecir, carga una traza 1.0 con condiciones o cambios de valores enteros.' : modo === 'predecir' ? 'Predice los valores y el resultado de las condiciones para continuar.' : 'Sigue la ejecución automática o paso a paso.' }}</p>
+                </template>
+            </ControlesEjecucion>
 
             <div class="dv-columnas">
                 <VisorCodigo :titulo="usaJSON && instruccionesJSON ? 'Instrucciones del JSON' : 'Código fuente'" :codigo="ejemplo.codigo" :archivo="ejemplo.archivo" :linea="paso?.linea ?? null" :esperando="esperando" />
@@ -463,13 +472,10 @@ function cerrarSesion() {
 .depurador-app .dv-ejercicio > label { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; color: #715691; font-size: 12px; }
 .depurador-app .dv-ejercicio select { max-width: 100%; width: 390px; padding: 9px 32px 9px 11px; border: 1px solid #d6c6ed; border-radius: 10px; background: #f9f6ff; color: #6846aa; font-size: 14px; font-weight: 600; }
 .depurador-app .dv-nombre-codigo { display: block; color: #6846aa; font-size: 16px; }
-.depurador-app .dv-ejercicio p, .depurador-app .dv-modos p { margin-top: 10px; color: #8b779f; font-size: 12px; }
-.depurador-app .dv-modos { min-width: 0; margin: 0; padding: 0; border: 0; }
-.depurador-app .dv-modos legend { margin-bottom: 10px; color: #715691; font-size: 12px; }
-.depurador-app .dv-modos > div { display: flex; gap: 5px; padding: 4px; border: 1px solid #d9ccef; border-radius: 12px; background: #e5dbf6; }
-.depurador-app .dv-modos label { display: flex; align-items: center; justify-content: center; gap: 7px; flex: 1; padding: 6px 12px; border-radius: 8px; color: #937bac; font-size: 12px; cursor: pointer; }
-.depurador-app .dv-modos label.activo { background: #fff; color: #7652b7; box-shadow: 0 2px 6px #8663b514; }
-.depurador-app .dv-modos input { margin: 0; width: 12px; height: 12px; accent-color: #8f68ca; }
+.depurador-app .dv-ejercicio p { margin-top: 10px; color: #8b779f; font-size: 12px; }
+.depurador-app .dv-modos-compactos { min-width: 0; margin: 0; padding: 0; border: 0; }
+.depurador-app .dv-modos-compactos label { display: flex; align-items: center; justify-content: center; gap: 7px; flex: 1; padding: 6px 12px; border-radius: 8px; color: #937bac; font-size: 12px; cursor: pointer; }
+.depurador-app .dv-modos-compactos input { margin: 0; width: 12px; height: 12px; }
 .depurador-app .dv-panel { min-width: 0; border: 1px solid #eee6f4; border-radius: 20px; background: #fff; box-shadow: 0 10px 28px #4e357005; }
 .depurador-app .dv-panel-cabecera { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 17px 21px; border-bottom: 1px solid #efe8f6; }
 .depurador-app .dv-panel-cabecera h2 { color: #765592; font-size: 14px; font-weight: 600; }
@@ -538,6 +544,7 @@ function cerrarSesion() {
     --rec-secundario: #726C87;
     --rec-acento: #4F26C6;
     --rec-alerta: #795217;
+    --rec-modo-activo: #4F26C6;
 }
 html.dark .depurador-app .dv-recorrido {
     --rec-superficie: #1C1833;
@@ -549,6 +556,7 @@ html.dark .depurador-app .dv-recorrido {
     --rec-secundario: #ABA4C5;
     --rec-acento: #C5B6F5;
     --rec-alerta: #F4D38A;
+    --rec-modo-activo: #6840CE;
 }
 .depurador-app .dv-recorrido .dv-encabezado { margin-bottom: 18px; }
 .depurador-app .dv-recorrido .dv-encabezado h1 { overflow-wrap: anywhere; line-height: 1.2; }
@@ -569,15 +577,26 @@ html.dark .depurador-app .dv-recorrido {
 }
 .depurador-app .dv-recorrido .dv-ejercicio { min-width: 0; overflow-wrap: anywhere; }
 .depurador-app .dv-recorrido .dv-ejercicio select { width: 100%; }
-.depurador-app .dv-recorrido .dv-ejercicio > label,
-.depurador-app .dv-recorrido .dv-modos legend { color: var(--rec-texto); font-weight: 700; margin-bottom: 6px; }
-.depurador-app .dv-recorrido .dv-modos > div { background: var(--rec-fondo); border-color: var(--rec-borde); }
-.depurador-app .dv-recorrido .dv-modos label { background: transparent; border: 1px solid transparent; color: var(--rec-secundario); }
-.depurador-app .dv-recorrido .dv-modos label.activo { background: var(--rec-activo); color: var(--rec-acento); border-color: var(--rec-borde); font-weight: 700; box-shadow: none; }
-.depurador-app .dv-recorrido .dv-modos label:has(input:disabled) { opacity: .65; cursor: not-allowed; }
-.depurador-app .dv-recorrido .dv-ejercicio p:not(.dv-aviso),
-.depurador-app .dv-recorrido .dv-modos p { color: var(--rec-secundario); margin-top: 6px; }
-.depurador-app .dv-json { grid-column: 1 / -1; padding-top: 12px; border-top: 1px solid var(--rec-borde); }
+.depurador-app .dv-recorrido .dv-ejercicio > label { color: var(--rec-texto); font-weight: 700; margin-bottom: 6px; }
+.depurador-app .dv-recorrido .dv-ejercicio p:not(.dv-aviso) { color: var(--rec-secundario); margin-top: 6px; }
+.depurador-app .dv-recorrido .dv-seleccion { box-shadow: none; }
+.depurador-app .dv-json { min-width: 0; border-inline-start: 1px solid var(--rec-borde); padding-inline-start: 16px; }
+.depurador-app .dv-modos-fila { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.depurador-app .dv-modos-titulo { color: var(--rec-secundario); font-size: 12px; font-weight: 600; }
+.depurador-app .dv-modos-opciones {
+    display: flex;
+    padding: 0;
+    border: 1px solid var(--rec-borde);
+    border-radius: 8px;
+    background: var(--rec-fondo);
+}
+.depurador-app .dv-recorrido .dv-modos-compactos .dv-modos-opciones label { background: transparent; border: 0; border-radius: 0; color: var(--rec-texto); min-height: 34px; padding: 5px 9px; }
+.depurador-app .dv-recorrido .dv-modos-compactos label:first-child { border-radius: 7px 0 0 7px; }
+.depurador-app .dv-recorrido .dv-modos-compactos label:last-child { border-radius: 0 7px 7px 0; }
+.depurador-app .dv-recorrido .dv-modos-compactos .dv-modos-opciones label.activo { background: var(--rec-modo-activo); color: #fff; font-weight: 600; box-shadow: none; }
+.depurador-app .dv-recorrido .dv-modos-compactos label:has(input:disabled) { opacity: .60; cursor: not-allowed; }
+.depurador-app .dv-modos-compactos input { accent-color: var(--rec-acento); }
+.depurador-app .dv-recorrido .dv-modos-ayuda { color: var(--rec-secundario); font-size: 12px; margin-top: 6px; }
 .depurador-app .dv-json .dv-editor-pie { justify-content: flex-start; margin-top: 8px; }
 .depurador-app .dv-recorrido .dv-panel { border-color: var(--rec-borde); border-radius: 14px; box-shadow: none; }
 .depurador-app .dv-recorrido .dv-panel-cabecera { border-color: var(--rec-borde); padding: 12px 16px; }
@@ -585,12 +604,28 @@ html.dark .depurador-app .dv-recorrido {
 .depurador-app .dv-recorrido .dv-etiqueta { background: var(--rec-activo); color: var(--rec-acento); overflow-wrap: anywhere; }
 .depurador-app .dv-recorrido .dv-nombre-codigo,
 .depurador-app .dv-recorrido .dv-volver { color: var(--rec-acento); overflow-wrap: anywhere; }
-.depurador-app .dv-recorrido .dv-editor { margin-bottom: 12px; }
+.depurador-app .dv-recorrido .dv-archivo { margin-bottom: 10px; }
+.depurador-app .dv-archivo-cabecera {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px 16px;
+    flex-wrap: wrap;
+    padding: 10px 16px;
+}
+.depurador-app .dv-archivo-info { flex: 1 1 280px; min-width: 0; }
+.depurador-app .dv-archivo-identidad { display: flex; align-items: baseline; gap: 8px; }
+.depurador-app .dv-archivo-identidad h2 { font-size: 16px; font-weight: 700; }
+.depurador-app .dv-archivo-detalles { color: var(--rec-secundario); font-size: 12px; overflow-wrap: anywhere; }
+.depurador-app .dv-archivo .dv-editor-cuerpo { border-top: 1px solid var(--rec-borde); }
+.depurador-app .dv-recorrido .dv-archivo .dv-editor-acciones .dv-boton,
+.depurador-app .dv-recorrido .controles .dv-boton { min-height: 34px; padding: 5px 10px; }
 .depurador-app .dv-recorrido .dv-editor-acciones [aria-expanded]::after { content: ''; width: .45em; height: .45em; border-right: 1px solid; border-bottom: 1px solid; transform: translateY(-2px) rotate(45deg); }
 .depurador-app .dv-recorrido .dv-editor-acciones [aria-expanded="true"]::after { transform: translateY(2px) rotate(225deg); }
 .depurador-app .dv-recorrido .dv-boton:not(.dv-primario) { color: var(--rec-acento); }
-.depurador-app .dv-recorrido .controles { padding: 12px 16px; margin-bottom: 14px; }
-.depurador-app .dv-recorrido .estado-ejecucion { margin: 9px 0 6px; color: var(--rec-secundario); }
+.depurador-app .dv-recorrido .controles { padding: 10px 16px; margin-bottom: 10px; }
+.depurador-app .dv-recorrido .controles .velocidad { color: var(--rec-secundario); }
+.depurador-app .dv-recorrido .estado-ejecucion { margin: 7px 0 5px; color: var(--rec-secundario); }
 .depurador-app .dv-recorrido .estado-ejecucion > :last-child { color: var(--rec-texto); font-weight: 700; font-variant-numeric: tabular-nums; }
 .depurador-app .dv-recorrido .estado.esperando { color: var(--rec-alerta); }
 .depurador-app .dv-recorrido .estado.reproduciendo { color: var(--rec-acento); }
@@ -633,12 +668,9 @@ html.dark .depurador-app .dv-recorrido {
 .depurador-app .dv-recorrido .nota-vacio { color: var(--rec-secundario); }
 .depurador-app .dv-recorrido .dv-consola > p,
 .depurador-app .dv-recorrido .dv-consola pre { min-height: 0; padding: 12px 16px; color: var(--rec-secundario); background: var(--rec-superficie); }
-@media (min-width: 1250px) {
-    .depurador-app .dv-origen.con-json { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .depurador-app .dv-origen.con-json .dv-json { grid-column: auto; border-top: 0; border-inline-start: 1px solid var(--rec-borde); padding: 0 0 0 16px; }
-}
 @media (max-width: 540px) {
     .depurador-app .dv-origen { grid-template-columns: minmax(0, 1fr); }
+    .depurador-app .dv-json { border-inline-start: 0; padding-inline-start: 0; border-top: 1px solid var(--rec-borde); padding-top: 12px; }
     .depurador-app .dv-recorrido .dv-seleccion { padding: 12px; }
     .depurador-app .dv-recorrido .visor .codigo { min-height: 0; max-height: 240px; }
     .depurador-app .dv-acciones-cuenta { gap: 8px; }
