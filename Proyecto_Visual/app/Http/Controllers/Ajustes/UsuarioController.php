@@ -17,6 +17,14 @@ class UsuarioController extends Controller
 {
     public function index(Request $request): Response
     {
+        if ($request->user()->rol === 'estudiante') {
+            return Inertia::render('Ajustes', [
+                'usuarios' => null,
+                'filtros' => ['q' => ''],
+                'perfilId' => (int) $request->user()->getAuthIdentifier(),
+            ]);
+        }
+
         Gate::authorize('viewAny', Usuario::class);
         $filtros = $request->validate(['q' => ['nullable', 'string', 'max:100']]);
         $q = $filtros['q'] ?? '';

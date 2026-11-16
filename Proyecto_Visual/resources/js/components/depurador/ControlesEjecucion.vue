@@ -41,27 +41,32 @@ defineEmits<{
                 </button>
                 <button type="button" class="dv-boton" :disabled="indice < 0" @click="$emit('reiniciar')">Reiniciar</button>
             </div>
-            <label class="velocidad">Ritmo
-                <select :value="intervalo" @change="$emit('update:intervalo', Number(($event.target as HTMLSelectElement).value))">
-                    <option :value="2200">Lento</option>
-                    <option :value="1400">Normal</option>
-                    <option :value="700">Rápido</option>
-                </select>
-            </label>
+            <div class="ajustes-recorrido">
+                <slot name="modo" />
+                <label class="velocidad">Ritmo
+                    <select :value="intervalo" @change="$emit('update:intervalo', Number(($event.target as HTMLSelectElement).value))">
+                        <option :value="2200">Lento</option>
+                        <option :value="1400">Normal</option>
+                        <option :value="700">Rápido</option>
+                    </select>
+                </label>
+            </div>
         </div>
         <div class="estado-ejecucion">
             <span class="estado" :class="{ esperando, reproduciendo }" role="status"><span class="punto" aria-hidden="true" />{{ estado }}</span>
             <span>Paso {{ Math.max(0, indice + 1) }} de {{ total }}</span>
         </div>
         <progress :value="ejecutados" :max="Math.max(1, total)" aria-label="Pasos ejecutados" />
+        <slot name="ayuda" />
     </section>
 </template>
 
 <style scoped>
 .controles { padding: 20px 22px; margin-bottom: 22px; }
-.fila-controles, .botones, .velocidad, .estado-ejecucion, .estado { display: flex; align-items: center; }
-.fila-controles { justify-content: space-between; flex-wrap: wrap; gap: 16px; }
-.botones { gap: 8px; flex-wrap: wrap; }
+.fila-controles, .botones, .ajustes-recorrido, .velocidad, .estado-ejecucion, .estado { display: flex; align-items: center; }
+.fila-controles { justify-content: space-between; flex-wrap: wrap; gap: 8px 14px; }
+.ajustes-recorrido { gap: 8px 14px; flex-wrap: wrap; min-width: 0; }
+.botones { gap: 6px; flex-wrap: wrap; }
 .botones svg { width: 14px; height: 14px; }
 .velocidad { gap: 9px; color: #82738f; font-size: 12px; }
 .velocidad select { padding: 7px 10px; border: 1px solid #e5ddef; border-radius: 9px; color: #60516e; background: #fcfaff; }

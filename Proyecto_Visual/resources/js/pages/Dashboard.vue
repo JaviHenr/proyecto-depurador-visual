@@ -71,89 +71,92 @@ const actividadReciente = ref<ActividadReciente[]>([
                 </div>
             </header>
 
-            <!-- Tarjeta Hero: CÓDIGOS DISPONIBLES con marca de agua Traza -->
-            <section class="tarjeta-hero" aria-labelledby="hero-title">
-                <div class="hero-info">
-                    <span class="hero-tag">CÓDIGOS DISPONIBLES</span>
-                    <h2 id="hero-title" class="hero-titulo">Inicia una sesión de depuración</h2>
-                    <p class="hero-descripcion">
-                        Consulta los códigos y programas disponibles para iniciar una sesión de depuración.
-                        Ingresa a tu depurador y selecciona un código para comenzar.
-                    </p>
-                    <button
-                        type="button"
-                        class="btn-hero"
-                        @click="irACodigos"
+            <div class="inicio-tareas">
+                <!-- Tarjeta Hero: PRÁCTICA PASO A PASO con marca de agua Traza -->
+                <section class="tarjeta-hero" aria-labelledby="hero-title">
+                    <div class="hero-info">
+                        <span class="hero-tag">PRÁCTICA PASO A PASO</span>
+                        <h2 id="hero-title" class="hero-titulo">Inicia una sesión de depuración</h2>
+                        <p class="hero-descripcion">
+                            Elige un ejemplo y sigue la ejecución línea por línea. Puedes observar los cambios o predecir qué ocurrirá.
+                        </p>
+                        <button
+                            type="button"
+                            class="btn-hero"
+                            @click="irACodigos"
+                        >
+                            <span>Abrir depurador</span>
+                            <span class="flecha-btn">→</span>
+                        </button>
+                    </div>
+
+                    <!-- Gráfico de traza decorativo a la derecha de la tarjeta -->
+                    <div class="hero-watermark-wrapper" aria-hidden="true">
+                        <svg class="hero-watermark" viewBox="0 0 320 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M20 180 H90 V110 H170 V50 H270"
+                                stroke="rgba(255, 255, 255, 0.22)"
+                                stroke-width="18"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            />
+                            <circle cx="170" cy="110" r="38" fill="rgba(215, 196, 255, 0.24)" />
+                            <circle cx="170" cy="110" r="20" fill="#D7C4FF" />
+                        </svg>
+                    </div>
+                </section>
+
+                <!-- Fila de módulos (Actividades y Mis Códigos) -->
+                <section class="fila-modulos">
+                    <!-- Tarjeta Actividades -->
+                    <article
+                        class="tarjeta-modulo"
+                        role="button"
+                        tabindex="0"
+                        @click="irAActividades"
+                        @keydown.enter="irAActividades"
+                        @keydown.space.prevent="irAActividades"
                     >
-                        <span>Ver códigos</span>
-                        <span class="flecha-btn">→</span>
-                    </button>
-                </div>
+                        <div class="icono-modulo-badge">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="8" y1="6" x2="21" y2="6"/>
+                                <line x1="8" y1="12" x2="21" y2="12"/>
+                                <line x1="8" y1="18" x2="21" y2="18"/>
+                                <circle cx="4" cy="6" r="1.5" fill="currentColor"/>
+                                <circle cx="4" cy="12" r="1.5" fill="currentColor"/>
+                                <circle cx="4" cy="18" r="1.5" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <h3 class="tarjeta-modulo-titulo">Actividades</h3>
+                        <p class="tarjeta-modulo-desc">
+                            Consulta las actividades de tus secciones.
+                        </p>
+                        <span class="flecha-modulo" aria-hidden="true">→</span>
+                    </article>
 
-                <!-- Gráfico de traza decorativo a la derecha de la tarjeta -->
-                <div class="hero-watermark-wrapper" aria-hidden="true">
-                    <svg class="hero-watermark" viewBox="0 0 320 220" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M20 180 H90 V110 H170 V50 H270"
-                            stroke="rgba(255, 255, 255, 0.22)"
-                            stroke-width="18"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        />
-                        <circle cx="170" cy="110" r="38" fill="rgba(215, 196, 255, 0.24)" />
-                        <circle cx="170" cy="110" r="20" fill="#D7C4FF" />
-                    </svg>
-                </div>
-            </section>
-
-            <!-- Fila de módulos (Actividades y Mis Códigos) -->
-            <section class="fila-modulos">
-                <!-- Tarjeta Actividades -->
-                <article
-                    class="tarjeta-modulo"
-                    role="button"
-                    tabindex="0"
-                    @click="irAActividades"
-                    @keydown.enter="irAActividades"
-                    @keydown.space.prevent="irAActividades"
-                >
-                    <div class="icono-modulo-badge">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="8" y1="6" x2="21" y2="6"/>
-                            <line x1="8" y1="12" x2="21" y2="12"/>
-                            <line x1="8" y1="18" x2="21" y2="18"/>
-                            <circle cx="4" cy="6" r="1.5" fill="currentColor"/>
-                            <circle cx="4" cy="12" r="1.5" fill="currentColor"/>
-                            <circle cx="4" cy="18" r="1.5" fill="currentColor"/>
-                        </svg>
-                    </div>
-                    <h3 class="tarjeta-modulo-titulo">Actividades</h3>
-                    <p class="tarjeta-modulo-desc">
-                        Actividades a realizar, se visualizan tus actividades pendientes.
-                    </p>
-                </article>
-
-                <!-- Tarjeta Mis Códigos -->
-                <article
-                    class="tarjeta-modulo"
-                    role="button"
-                    tabindex="0"
-                    @click="irAMisCodigos"
-                    @keydown.enter="irAMisCodigos"
-                    @keydown.space.prevent="irAMisCodigos"
-                >
-                    <div class="icono-modulo-badge">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="16 18 22 12 16 6"/>
-                            <polyline points="8 6 2 12 8 18"/>
-                        </svg>
-                    </div>
-                    <h3 class="tarjeta-modulo-titulo">Mis Códigos</h3>
-                    <p class="tarjeta-modulo-desc">
-                        Accede rápidamente a tus actividades frecuentes.
-                    </p>
-                </article>
-            </section>
+                    <!-- Tarjeta Mis Códigos -->
+                    <article
+                        class="tarjeta-modulo"
+                        role="button"
+                        tabindex="0"
+                        @click="irAMisCodigos"
+                        @keydown.enter="irAMisCodigos"
+                        @keydown.space.prevent="irAMisCodigos"
+                    >
+                        <div class="icono-modulo-badge">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="16 18 22 12 16 6"/>
+                                <polyline points="8 6 2 12 8 18"/>
+                            </svg>
+                        </div>
+                        <h3 class="tarjeta-modulo-titulo">Mis Códigos</h3>
+                        <p class="tarjeta-modulo-desc">
+                            Abre tus programas guardados o escribe uno nuevo.
+                        </p>
+                        <span class="flecha-modulo" aria-hidden="true">→</span>
+                    </article>
+                </section>
+            </div>
 
             <!-- Bloque inferior: Actividad reciente -->
             <section class="seccion-reciente">
