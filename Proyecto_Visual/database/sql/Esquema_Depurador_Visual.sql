@@ -60,7 +60,7 @@ CREATE TABLE codigo (
     id_usuario INTEGER NOT NULL,
     nombre_codigo VARCHAR(150) NOT NULL,
     nombre_archivo VARCHAR(200) NOT NULL,
-    formato VARCHAR(20) NOT NULL DEFAULT 'java',
+    formato VARCHAR(20) NOT NULL DEFAULT 'python',
     contenido_codigo TEXT NOT NULL,
     fecha_creacion_codigo DATE NOT NULL DEFAULT CURRENT_DATE,
     CONSTRAINT fk_codigo_actividad FOREIGN KEY (id_actividad)
